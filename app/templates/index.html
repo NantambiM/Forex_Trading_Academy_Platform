@@ -1,11 +1,21 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forex Trading Academy</title>
-</head>
-<body>
-    <h1>Welcome to Forex Trading Academy</h1>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+
+<div class="text-center mt-5">
+
+    <h1>Welcome to Forex Academy</h1>
+
+    <p class="lead">
+        Learn Forex Trading, Practice Strategies, and Improve Your Trading Skills.
+    </p>
+
+    <a href="{{ url_for('main.register') }}" class="btn btn-primary btn-lg">
+        Get Started
+    </a>
+
+</div>
+
+{% endblock %} 
