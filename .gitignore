@@ -1,12 +1,17 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 .venv
 __pycache__
 =======
 >>>>>>> 5cd580eb05673ee7758ea5026371014dc2ac1c0f
+=======
+.venv
+__pycache__
+>>>>>>> a1c9217b01aa442dc2968588f739d10cafde0195
 venv/
 .venv/
 __pycache__/
 *.pyc
 instance/
 site.db
-.env
+.env 
