@@ -1,0 +1,32 @@
+{%extends 'base.html'%}
+{%block title%}
+    Quiz {{quiz.id}}
+{%endblock%}
+
+{%block content%}
+<h3>Quiz {{quiz.id}}: {{quiz.quiz_topic}}</h3>
+<a href=""><button>Back to lesson</button></a>
+<form method="post">
+    {%for qn in questions%}
+        <p>{{qn.question_text}}</p>
+        <input type="radio" name="question_{{qn.id}}" value="{{qn.option1}}">{{qn.option1}}<br>
+        <input type="radio" name="question_{{qn.id}}" value="{{qn.option2}}">{{qn.option2}}<br>
+        {%if qn.option3 %}
+            <input type="radio" name="question_{{qn.id}}" value="{{qn.option3}}">{{qn.option3}}<br>
+        {% endif %}
+        {% if qn.option4 %}
+            <input type="radio" name="question_{{qn.id}}" value="{{qn.option4}}">{{qn.option4}}<br>
+        {% endif %}
+            
+    {%endfor%}
+
+    <input type="submit" value="Submit">
+</form>
+{% if score is not none %}
+    <p>Your score: {{score}} out of {{questions|length}}</p>
+{% endif %}
+
+<a href=""><button>Next lesson</button></a>
+
+
+{%endblock%}

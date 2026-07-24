@@ -1,0 +1,41 @@
+{%extends 'base.html'%}
+{%block title%}
+    {{lesson.lesson_name}}
+{%endblock%}
+{%block content%}
+<h3>{{lesson.lesson_name}}</h3>
+{% if lesson.id <= 1 %}
+    <style>
+        .hidpre {
+            display: none;
+            align: left;
+        }
+    </style>
+{% endif %}
+{% if lesson.id >= 10 %}
+    <style>
+        .hidnext {
+            display: none;
+            align: right;
+        }
+    </style>
+{% endif %}
+<a href="/lesson/{{lesson.id-1}}" class="hidpre "><button>Previous</button></a>
+
+
+<a href="/lesson/{{lesson.id+1}}" class="hidnext" ><button>Next</button></a><br><br>  
+
+{% if lesson.video_url %}
+    <iframe width="560" height="315" src="{{lesson.video_url}}" frameborder="0" allowfullscreen></iframe>
+    <br><a href="{{lesson.video_url}}">View Video</a><br><br>
+{% endif %}
+
+<p>{{lesson.content}}</p>
+
+<a href="/lesson/{{lesson.id-1}}" class="hidpre "><button>Previous</button></a>
+
+<a href="/lesson/{{lesson.id+1}}" class="hidnext "><button>Next</button></a><br>
+
+<br><a href=""><button>Take Quiz</button></a>
+
+{%endblock%}
