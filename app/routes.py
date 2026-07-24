@@ -3,7 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required
 
 from .forms import RegisterForm, LoginForm
-from .models import User
+from .models import User, TradingAccount
 from . import db
 
 main = Blueprint("main", __name__)
@@ -36,6 +36,14 @@ def register():
         )
 
         db.session.add(user)
+        db.session.commit()
+        
+        account = TradingAccount(
+            user_id=user.id,
+            balance=10000.00,
+            equity=10000.00
+        )
+        db.session.add(account)
         db.session.commit()
 
         flash("Registration successful! Please login.", "success")

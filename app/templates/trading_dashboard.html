@@ -1,0 +1,651 @@
+{% extends "base.html" %}
+
+{% block title %}Trading Terminal - Forex Academy{% endblock %}
+
+{% block extra_head %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<!-- Real-time Live Market Ticker Bar -->
+<div class="ticker-wrapper mb-4">
+    <div class="ticker-content" id="tickerContent">
+        {% for pair in pairs %}
+        <div class="ticker-item" id="ticker-{{ pair.symbol | replace('/', '') }}">
+            <span class="ticker-symbol fw-bold"><i class="bi bi-currency-exchange me-1 text-primary"></i>{{ pair.symbol }}</span>
+            <span class="ticker-price text-light" id="bid-{{ pair.symbol | replace('/', '') }}">{{ "%.4f"|format(pair.buy_price) }}</span>
+            <span class="badge bg-dark border border-secondary border-opacity-25 text-success ms-1" id="change-{{ pair.symbol | replace('/', '') }}">
+                <i class="bi bi-arrow-up-short"></i> +0.45%
+            </span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="container-fluid px-4 pb-5">
+    
+    <!-- Top Account Stats KPI Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="kpi-card kpi-blue h-100">
+                <div class="kpi-label"><i class="bi bi-wallet2 me-1"></i> Balance</div>
+                <div class="kpi-value">${{ "%.2f"|format(account.balance) }}</div>
+                <div class="kpi-sub">Initial Capital</div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="kpi-card kpi-gold h-100">
+                <div class="kpi-label"><i class="bi bi-graph-up me-1"></i> Account Equity</div>
+                <div class="kpi-value" id="kpi-equity">${{ "%.2f"|format(equity) }}</div>
+                <div class="kpi-sub">Live Valuation</div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="kpi-card {% if floating_pnl >= 0 %}kpi-green{% else %}kpi-red{% endif %} h-100">
+                <div class="kpi-label"><i class="bi bi-lightning-charge me-1"></i> Floating P&amp;L</div>
+                <div class="kpi-value {% if floating_pnl >= 0 %}text-success{% else %}text-danger{% endif %}" id="kpi-pnl">
+                    {% if floating_pnl >= 0 %}+{% endif %}${{ "%.2f"|format(floating_pnl) }}
+                </div>
+                <div class="kpi-sub">Unrealized Profit</div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="kpi-card h-100">
+                <div class="kpi-label"><i class="bi bi-shield-check me-1"></i> Free Margin</div>
+                <div class="kpi-value">${{ "%.2f"|format(free_margin) }}</div>
+                <div class="kpi-sub">Available Funds</div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="kpi-card h-100">
+                <div class="kpi-label"><i class="bi bi-pie-chart me-1"></i> Margin Used</div>
+                <div class="kpi-value">${{ "%.2f"|format(margin_used) }}</div>
+                <div class="kpi-sub">Collateral Locked</div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="kpi-card h-100">
+                <div class="kpi-label"><i class="bi bi-layers me-1"></i> Open Positions</div>
+                <div class="kpi-value">{{ open_trades|length }}</div>
+                <div class="kpi-sub">Active Orders</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Workspace Row: Chart & Order Execution -->
+    <div class="row g-4 mb-4">
+        
+        <!-- Left: Interactive Price Chart -->
+        <div class="col-lg-8">
+            <div class="trading-card h-100">
+                <div class="trading-card-header flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fs-5 fw-bold" id="activePairTitle">EUR/USD</span>
+                        <span class="badge badge-buy" id="activeAskPrice">ASK: 1.0850</span>
+                        <span class="badge badge-sell" id="activeBidPrice">BID: 1.0848</span>
+                    </div>
+
+                    <!-- Timeframe & Chart Controls -->
+                    <div class="d-flex align-items-center gap-1 ms-auto">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-secondary active btn-tf" data-tf="1M">1M</button>
+                            <button type="button" class="btn btn-outline-secondary btn-tf" data-tf="5M">5M</button>
+                            <button type="button" class="btn btn-outline-secondary btn-tf" data-tf="15M">15M</button>
+                            <button type="button" class="btn btn-outline-secondary btn-tf" data-tf="1H">1H</button>
+                            <button type="button" class="btn btn-outline-secondary btn-tf" data-tf="1D">1D</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="trading-card-body">
+                    <div style="height: 380px; position: relative;">
+                        <canvas id="tradingChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Fast Order Execution Panel -->
+        <div class="col-lg-4">
+            <div class="trading-card h-100">
+                <div class="trading-card-header">
+                    <h5 class="trading-card-title">
+                        <i class="bi bi-lightning-fill text-warning"></i> Order Execution
+                    </h5>
+                    <span class="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-25">Instant Market</span>
+                </div>
+
+                <div class="trading-card-body">
+                    <form action="{{ url_for('trading.place_order') }}" method="POST" id="orderForm">
+                        
+                        <!-- Currency Pair Selection -->
+                        <div class="mb-3">
+                            <label class="form-label-sm">Instrument Pair</label>
+                            <select class="form-select form-select-dark" name="pair" id="orderPairSelect">
+                                {% for pair in pairs %}
+                                <option value="{{ pair.symbol }}" data-buy="{{ pair.buy_price }}" data-sell="{{ pair.sell_price }}">
+                                    {{ pair.symbol }} (Buy: {{ "%.4f"|format(pair.buy_price) }} / Sell: {{ "%.4f"|format(pair.sell_price) }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Trade Direction Selector Tabs -->
+                        <div class="mb-3">
+                            <label class="form-label-sm">Order Type</label>
+                            <input type="hidden" name="trade_type" id="tradeTypeInput" value="BUY">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <button type="button" class="btn btn-trade-buy w-100 py-2 active" id="btnTypeBuy">
+                                        <i class="bi bi-arrow-up-circle-fill me-1"></i> BUY / LONG
+                                    </button>
+                                </div>
+                                <div class="col-6">
+                                    <button type="button" class="btn btn-outline-danger w-100 py-2" id="btnTypeSell">
+                                        <i class="bi bi-arrow-down-circle-fill me-1"></i> SELL / SHORT
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lot Size Input with Presets -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label-sm mb-0">Volume (Lots)</label>
+                                <span class="text-secondary small" id="contractSizeText">1 Lot = 100,000 Units</span>
+                            </div>
+                            <input type="number" step="0.01" min="0.01" max="100" class="form-control form-control-dark font-monospace text-center fs-5 fw-bold mb-2" name="lot_size" id="lotSizeInput" value="0.10">
+                            
+                            <div class="d-flex gap-1">
+                                <button type="button" class="btn btn-sm btn-dark border border-secondary border-opacity-25 flex-fill btn-preset-lot" data-lot="0.01">0.01</button>
+                                <button type="button" class="btn btn-sm btn-dark border border-secondary border-opacity-25 flex-fill btn-preset-lot" data-lot="0.05">0.05</button>
+                                <button type="button" class="btn btn-sm btn-dark border border-secondary border-opacity-25 flex-fill btn-preset-lot" data-lot="0.10">0.10</button>
+                                <button type="button" class="btn btn-sm btn-dark border border-secondary border-opacity-25 flex-fill btn-preset-lot" data-lot="0.50">0.50</button>
+                                <button type="button" class="btn btn-sm btn-dark border border-secondary border-opacity-25 flex-fill btn-preset-lot" data-lot="1.00">1.00</button>
+                            </div>
+                        </div>
+
+                        <!-- Risk Parameters: Stop Loss & Take Profit -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label-sm text-danger">Stop Loss (Optional)</label>
+                                <input type="number" step="0.0001" class="form-control form-control-dark font-monospace" placeholder="e.g. 1.0800" name="stop_loss">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label-sm text-success">Take Profit (Optional)</label>
+                                <input type="number" step="0.0001" class="form-control form-control-dark font-monospace" placeholder="e.g. 1.0920" name="take_profit">
+                            </div>
+                        </div>
+
+                        <!-- Order Summary Card -->
+                        <div class="p-3 rounded bg-dark border border-secondary border-opacity-25 mb-4">
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span class="text-secondary">Est. Entry Price:</span>
+                                <span class="fw-bold font-monospace text-light" id="summaryEntryPrice">1.0850</span>
+                            </div>
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span class="text-secondary">Required Margin (1:100):</span>
+                                <span class="fw-bold font-monospace text-warning" id="summaryRequiredMargin">$100.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between small">
+                                <span class="text-secondary">Pip Value:</span>
+                                <span class="fw-bold font-monospace text-info" id="summaryPipValue">$1.00 / pip</span>
+                            </div>
+                        </div>
+
+                        <!-- Submit Order Button -->
+                        <button type="submit" class="btn btn-trade-buy w-100 py-3 text-uppercase fs-6 tracking-wider" id="btnSubmitOrder">
+                            <i class="bi bi-check2-circle me-1"></i> Place Market Order
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Bottom Tables Section: Open Trades, Market Watchlist & History -->
+    <div class="trading-card">
+        <div class="trading-card-header p-0">
+            <ul class="nav nav-tabs nav-tabs-trading border-0" id="tradingTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="open-trades-tab" data-bs-toggle="tab" data-bs-target="#open-trades" type="button" role="tab">
+                        <i class="bi bi-card-list me-1"></i> Open Positions ({{ open_trades|length }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="watchlist-tab" data-bs-toggle="tab" data-bs-target="#watchlist" type="button" role="tab">
+                        <i class="bi bi-star me-1"></i> Market Watchlist
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">
+                        <i class="bi bi-clock-history me-1"></i> Trade History
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="trading-card-body p-0">
+            <div class="tab-content" id="tradingTabContent">
+                
+                <!-- Tab 1: Open Positions -->
+                <div class="tab-pane fade show active" id="open-trades" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-trading">
+                            <thead>
+                                <tr>
+                                    <th>Trade ID</th>
+                                    <th>Instrument</th>
+                                    <th>Direction</th>
+                                    <th>Volume (Lots)</th>
+                                    <th>Open Price</th>
+                                    <th>Current Price</th>
+                                    <th>Floating P&amp;L</th>
+                                    <th>Opened Time</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if open_trades %}
+                                    {% for trade in open_trades %}
+                                    <tr>
+                                        <td class="font-monospace text-secondary">#TRD-{{ trade.id }}</td>
+                                        <td class="fw-bold text-light">
+                                            <i class="bi bi-currency-exchange me-1 text-primary"></i>{{ trade.pair }}
+                                        </td>
+                                        <td>
+                                            {% if trade.trade_type == 'BUY' %}
+                                                <span class="badge badge-buy"><i class="bi bi-arrow-up"></i> BUY</span>
+                                            {% else %}
+                                                <span class="badge badge-sell"><i class="bi bi-arrow-down"></i> SELL</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="font-monospace fw-bold">{{ "%.2f"|format(trade.lot_size) }}</td>
+                                        <td class="font-monospace">{{ "%.4f"|format(trade.open_price) }}</td>
+                                        <td class="font-monospace text-info">{{ "%.4f"|format(trade.current_price if trade.current_price else trade.open_price) }}</td>
+                                        <td class="font-monospace fw-bold {% if trade.current_pnl >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {% if trade.current_pnl >= 0 %}+{% endif %}${{ "%.2f"|format(trade.current_pnl) }}
+                                        </td>
+                                        <td class="text-secondary small">{{ trade.opened_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                        <td class="text-end">
+                                            <form action="{{ url_for('trading.close_trade', trade_id=trade.id) }}" method="POST" class="d-inline">
+                                                <button type="submit" class="btn btn-close-position" onclick="return confirm('Close position #TRD-{{ trade.id }}?')">
+                                                    <i class="bi bi-x-circle me-1"></i> Close Position
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="9" class="text-center py-5 text-secondary">
+                                            <i class="bi bi-inbox fs-2 d-block mb-2 text-muted"></i>
+                                            No active open positions. Execute an order above to start trading!
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Watchlist -->
+                <div class="tab-pane fade" id="watchlist" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-trading">
+                            <thead>
+                                <tr>
+                                    <th>Pair</th>
+                                    <th>Bid Price</th>
+                                    <th>Ask Price</th>
+                                    <th>Spread</th>
+                                    <th>24h Change</th>
+                                    <th class="text-end">Quick Trade</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pair in pairs %}
+                                <tr>
+                                    <td class="fw-bold text-light">
+                                        <i class="bi bi-currency-exchange me-1 text-primary"></i>{{ pair.symbol }}
+                                    </td>
+                                    <td class="font-monospace text-danger" id="wl-bid-{{ pair.symbol | replace('/', '') }}">{{ "%.4f"|format(pair.sell_price) }}</td>
+                                    <td class="font-monospace text-success" id="wl-ask-{{ pair.symbol | replace('/', '') }}">{{ "%.4f"|format(pair.buy_price) }}</td>
+                                    <td class="font-monospace text-secondary">
+                                        {{ "%.1f"|format((pair.buy_price - pair.sell_price)*10000) }} pips
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-dark border border-secondary border-opacity-25 text-success">
+                                            <i class="bi bi-graph-up-arrow"></i> +0.32%
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-outline-success me-1 btn-quick-trade" data-pair="{{ pair.symbol }}" data-type="BUY">Buy</button>
+                                        <button class="btn btn-sm btn-outline-danger btn-quick-trade" data-pair="{{ pair.symbol }}" data-type="SELL">Sell</button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Trade History -->
+                <div class="tab-pane fade" id="history" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-trading">
+                            <thead>
+                                <tr>
+                                    <th>Trade ID</th>
+                                    <th>Pair</th>
+                                    <th>Type</th>
+                                    <th>Lot Size</th>
+                                    <th>Open Price</th>
+                                    <th>Close Price</th>
+                                    <th>Realized P&amp;L</th>
+                                    <th>Closed Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if closed_trades %}
+                                    {% for trade in closed_trades %}
+                                    <tr>
+                                        <td class="font-monospace text-secondary">#TRD-{{ trade.id }}</td>
+                                        <td class="fw-bold text-light">{{ trade.pair }}</td>
+                                        <td>
+                                            {% if trade.trade_type == 'BUY' %}
+                                                <span class="badge badge-buy">BUY</span>
+                                            {% else %}
+                                                <span class="badge badge-sell">SELL</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="font-monospace">{{ "%.2f"|format(trade.lot_size) }}</td>
+                                        <td class="font-monospace">{{ "%.4f"|format(trade.open_price) }}</td>
+                                        <td class="font-monospace">{{ "%.4f"|format(trade.close_price if trade.close_price else 0.0) }}</td>
+                                        <td class="font-monospace fw-bold {% if trade.profit_loss >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {% if trade.profit_loss >= 0 %}+{% endif %}${{ "%.2f"|format(trade.profit_loss) }}
+                                        </td>
+                                        <td class="text-secondary small">{{ trade.closed_at.strftime('%Y-%m-%d %H:%M:%S') if trade.closed_at else '-' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="8" class="text-center py-5 text-secondary">
+                                            <i class="bi bi-clock-history fs-2 d-block mb-2 text-muted"></i>
+                                            No closed trade history yet.
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    
+    // --- Chart Initialization ---
+    const ctx = document.getElementById('tradingChart').getContext('2d');
+    
+    // Generate realistic initial chart price data
+    function generatePriceData(basePrice, count = 30) {
+        const labels = [];
+        const data = [];
+        let current = basePrice;
+        const now = new Date();
+        
+        for (let i = count; i >= 0; i--) {
+            const time = new Date(now.getTime() - i * 60000);
+            labels.push(time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+            
+            const noise = (Math.random() - 0.49) * 0.0012;
+            current = Math.max(0.0001, current + noise);
+            data.push(parseFloat(current.toFixed(4)));
+        }
+        return { labels, data };
+    }
+
+    let activeSymbol = "EUR/USD";
+    let basePrice = 1.0850;
+    let initialChart = generatePriceData(basePrice, 35);
+
+    // Gradient background for chart
+    const gradient = ctx.createLinearGradient(0, 0, 0, 380);
+    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.35)');
+    gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: initialChart.labels,
+            datasets: [{
+                label: activeSymbol + ' Price',
+                data: initialChart.data,
+                borderColor: '#3b82f6',
+                borderWidth: 2,
+                backgroundColor: gradient,
+                fill: true,
+                tension: 0.25,
+                pointRadius: 0,
+                pointHoverRadius: 6,
+                pointHoverBackgroundColor: '#3b82f6',
+                pointHoverBorderColor: '#ffffff',
+                pointHoverBorderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index',
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    titleColor: '#94a3b8',
+                    bodyColor: '#f8fafc',
+                    bodyFont: { weight: 'bold', family: 'monospace' },
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                    borderWidth: 1,
+                    padding: 10,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            return `Price: $${context.parsed.y.toFixed(4)}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: 'rgba(255, 255, 255, 0.04)' },
+                    ticks: { color: '#64748b', maxTicksLimit: 8, font: { size: 11 } }
+                },
+                y: {
+                    grid: { color: 'rgba(255, 255, 255, 0.04)' },
+                    ticks: {
+                        color: '#64748b',
+                        font: { family: 'monospace', size: 11 },
+                        callback: function(val) { return val.toFixed(4); }
+                    }
+                }
+            }
+        }
+    });
+
+    // --- Order Form Logic ---
+    const orderPairSelect = document.getElementById('orderPairSelect');
+    const btnTypeBuy = document.getElementById('btnTypeBuy');
+    const btnTypeSell = document.getElementById('btnTypeSell');
+    const tradeTypeInput = document.getElementById('tradeTypeInput');
+    const lotSizeInput = document.getElementById('lotSizeInput');
+    const btnSubmitOrder = document.getElementById('btnSubmitOrder');
+    const summaryEntryPrice = document.getElementById('summaryEntryPrice');
+    const summaryRequiredMargin = document.getElementById('summaryRequiredMargin');
+    const summaryPipValue = document.getElementById('summaryPipValue');
+    const activePairTitle = document.getElementById('activePairTitle');
+    const activeAskPrice = document.getElementById('activeAskPrice');
+    const activeBidPrice = document.getElementById('activeBidPrice');
+
+    function updateOrderSummary() {
+        const selectedOption = orderPairSelect.options[orderPairSelect.selectedIndex];
+        const buyPrice = parseFloat(selectedOption.getAttribute('data-buy') || 1.0850);
+        const sellPrice = parseFloat(selectedOption.getAttribute('data-sell') || 1.0848);
+        const isBuy = tradeTypeInput.value === 'BUY';
+        
+        const entryPrice = isBuy ? buyPrice : sellPrice;
+        const lots = parseFloat(lotSizeInput.value) || 0.1;
+        
+        const requiredMargin = lots * 1000;
+        const pipValue = (lots * 10).toFixed(2);
+        
+        summaryEntryPrice.textContent = entryPrice.toFixed(4);
+        summaryRequiredMargin.textContent = `$${requiredMargin.toFixed(2)}`;
+        summaryPipValue.textContent = `$${pipValue} / pip`;
+
+        activePairTitle.textContent = orderPairSelect.value;
+        activeAskPrice.textContent = `ASK: ${buyPrice.toFixed(4)}`;
+        activeBidPrice.textContent = `BID: ${sellPrice.toFixed(4)}`;
+    }
+
+    // Toggle Buy/Sell Selection
+    btnTypeBuy.addEventListener('click', function() {
+        tradeTypeInput.value = 'BUY';
+        btnTypeBuy.className = 'btn btn-trade-buy w-100 py-2 active';
+        btnTypeSell.className = 'btn btn-outline-danger w-100 py-2';
+        btnSubmitOrder.className = 'btn btn-trade-buy w-100 py-3 text-uppercase fs-6 tracking-wider';
+        btnSubmitOrder.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Place BUY Market Order';
+        updateOrderSummary();
+    });
+
+    btnTypeSell.addEventListener('click', function() {
+        tradeTypeInput.value = 'SELL';
+        btnTypeSell.className = 'btn btn-trade-sell w-100 py-2 active';
+        btnTypeBuy.className = 'btn btn-outline-success w-100 py-2';
+        btnSubmitOrder.className = 'btn btn-trade-sell w-100 py-3 text-uppercase fs-6 tracking-wider';
+        btnSubmitOrder.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Place SELL Market Order';
+        updateOrderSummary();
+    });
+
+    orderPairSelect.addEventListener('change', function() {
+        const newPair = orderPairSelect.value;
+        const selectedOption = orderPairSelect.options[orderPairSelect.selectedIndex];
+        const newBasePrice = parseFloat(selectedOption.getAttribute('data-buy') || 1.0850);
+        
+        // Update Chart
+        const newChartData = generatePriceData(newBasePrice, 35);
+        chart.data.labels = newChartData.labels;
+        chart.data.datasets[0].data = newChartData.data;
+        chart.data.datasets[0].label = newPair + ' Price';
+        chart.update();
+
+        updateOrderSummary();
+    });
+
+    lotSizeInput.addEventListener('input', updateOrderSummary);
+
+    // Preset Lot Buttons
+    document.querySelectorAll('.btn-preset-lot').forEach(btn => {
+        btn.addEventListener('click', function() {
+            lotSizeInput.value = parseFloat(this.getAttribute('data-lot')).toFixed(2);
+            updateOrderSummary();
+        });
+    });
+
+    // Quick Trade Buttons in Watchlist
+    document.querySelectorAll('.btn-quick-trade').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const pair = this.getAttribute('data-pair');
+            const type = this.getAttribute('data-type');
+            
+            orderPairSelect.value = pair;
+            if (type === 'BUY') {
+                btnTypeBuy.click();
+            } else {
+                btnTypeSell.click();
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    });
+
+    // --- Live Market Price Feed Polling ---
+    function pollMarketData() {
+        fetch('/api/market_data')
+            .then(res => res.json())
+            .then(data => {
+                if (!data.pairs) return;
+                
+                data.pairs.forEach(p => {
+                    const cleanSymbol = p.symbol.replace('/', '');
+                    
+                    // Update Ticker
+                    const bidElem = document.getElementById(`bid-${cleanSymbol}`);
+                    const changeElem = document.getElementById(`change-${cleanSymbol}`);
+                    if (bidElem) bidElem.textContent = p.sell_price.toFixed(4);
+                    if (changeElem) {
+                        const isPos = p.change_pct >= 0;
+                        changeElem.className = `badge bg-dark border border-secondary border-opacity-25 ${isPos ? 'text-success' : 'text-danger'} ms-1`;
+                        changeElem.innerHTML = `<i class="bi ${isPos ? 'bi-arrow-up-short' : 'bi-arrow-down-short'}"></i> ${isPos ? '+' : ''}${p.change_pct}%`;
+                    }
+
+                    // Update Watchlist
+                    const wlBid = document.getElementById(`wl-bid-${cleanSymbol}`);
+                    const wlAsk = document.getElementById(`wl-ask-${cleanSymbol}`);
+                    if (wlBid) wlBid.textContent = p.sell_price.toFixed(4);
+                    if (wlAsk) wlAsk.textContent = p.buy_price.toFixed(4);
+
+                    // Update dropdown attribute
+                    const opt = orderPairSelect.querySelector(`option[value="${p.symbol}"]`);
+                    if (opt) {
+                        opt.setAttribute('data-buy', p.buy_price);
+                        opt.setAttribute('data-sell', p.sell_price);
+                    }
+
+                    // Push tick to chart if active
+                    if (p.symbol === orderPairSelect.value) {
+                        const now = new Date();
+                        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        
+                        chart.data.labels.push(timeStr);
+                        chart.data.datasets[0].data.push(p.buy_price);
+                        
+                        if (chart.data.labels.length > 40) {
+                            chart.data.labels.shift();
+                            chart.data.datasets[0].data.shift();
+                        }
+                        chart.update('none'); // silent update
+                    }
+                });
+
+                updateOrderSummary();
+            })
+            .catch(err => console.log('Market polling error:', err));
+    }
+
+    // Poll market ticks every 4 seconds
+    setInterval(pollMarketData, 4000);
+
+    // Initial summary calculation
+    updateOrderSummary();
+});
+</script>
+{% endblock %}
