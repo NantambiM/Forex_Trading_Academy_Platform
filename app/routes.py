@@ -1,8 +1,9 @@
-from flask import Blueprint, render_template, redirect, url_for, flash
+from flask import Blueprint, render_template, redirect, request, url_for, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required
 
 from .forms import RegisterForm, LoginForm
+from .models import  Question, Quiz,Lesson
 from .models import User, TradingAccount
 from . import db
 
@@ -94,3 +95,29 @@ def logout():
     flash("Logged out successfully.", "info")
 
     return redirect(url_for("main.login")) 
+
+@main.route("/lesson/<int:id>")
+def lesson(id):
+    lesson = Lesson.query.get(id)
+    if not lesson:
+        flash("Lesson not found.", "danger")
+        return redirect(url_for("main.dashboard"))
+    return render_template("lesson.html", lesson=lesson)
+
+@main.route("/quiz/<int:id>", methods=["GET", "POST"])
+def quiz(id):
+    quiz = Quiz.query.get(id)
+    questions = Question.query.filter_by(quiz_id=id).all()
+    if not quiz:
+        flash("Quiz not found.", "danger")
+        return redirect(url_for("main.dashboard"))
+    score = None
+    if request.method == "POST":
+        score=0
+        for question in questions:
+            selected_option = request.form.get(f"question_{question.id}")
+            if selected_option == question.correct_option:
+                score += 1
+
+
+    return render_template("quiz.html", quiz=quiz,questions=questions,score=score)

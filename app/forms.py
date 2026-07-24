@@ -1,6 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Email, Length
+from . models import Quiz,Question
 
 
 class RegisterForm(FlaskForm):
@@ -33,4 +34,4 @@ class LoginForm(FlaskForm):
         validators=[DataRequired()]
     )
 
-    submit = SubmitField("Login") 
+    submit = SubmitField("Login")     
