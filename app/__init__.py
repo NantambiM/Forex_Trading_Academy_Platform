@@ -25,7 +25,9 @@ def create_app():
         return User.query.get(int(user_id))
 
     from .routes import main
+    from .trading import trading
     app.register_blueprint(main)
+    app.register_blueprint(trading)
 
     with app.app_context():
         db.create_all()
