@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics — Forex Academy{% endblock %}
+
+{% block extra_head %}
+<style>
+  :root {
+    --an-panel: #131a2b;
+    --an-panel-border: #1a2338;
+    --an-text-dim: #8891a7;
+    --an-text-faint: #5b6580;
+    --an-blue: #3b82f6;
+    --an-blue-dim: #1d4ed8;
+    --an-green: #16c784;
+    --an-red: #f0546a;
+    --an-amber: #f5a623;
+  }
+
+  .an-page-head { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+  .an-page-head p { color: var(--an-text-dim); font-size: 14px; margin-top: 4px; margin-bottom: 0; }
+
+  .an-range-toggle { display:flex; background:#161d30; border:1px solid var(--an-panel-border); border-radius:8px; overflow:hidden; }
+  .an-range-toggle button { background:transparent; border:none; color:var(--an-text-dim); padding:8px 16px; font-size:13px; cursor:pointer; }
+  .an-range-toggle button.active { background: var(--an-blue-dim); color:#fff; }
+
+  .an-section-label { display:flex; align-items:center; gap:10px; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--an-text-faint); font-weight: 700; margin: 36px 0 14px; }
+  .an-section-label .an-dot { width:7px; height:7px; border-radius:50%; }
+  .an-section-label.trading .an-dot { background: var(--an-blue); }
+  .an-section-label.learning .an-dot { background: var(--an-amber); }
+
+  .an-stat-card { background: var(--an-panel); border: 1px solid var(--an-panel-border); border-left: 3px solid var(--an-blue); border-radius: 8px; padding: 18px 20px; height:100%; }
+  .an-stat-card.learning { border-left-color: var(--an-amber); }
+  .an-stat-card.muted { border-left-color:#3a4258; }
+  .an-stat-card .an-label { font-size:12px; letter-spacing:0.05em; text-transform:uppercase; color: var(--an-text-faint); font-weight:600; }
+  .an-stat-card .an-value { font-size: 26px; font-weight: 700; margin-top: 8px; }
+  .an-stat-card .an-sub { font-size: 12px; color: var(--an-text-dim); margin-top: 4px; }
+  .an-value.pos { color: var(--an-green); }
+  .an-value.neg { color: var(--an-red); }
+
+  .an-panel { background: var(--an-panel); border: 1px solid var(--an-panel-border); border-radius: 10px; padding: 20px; height:100%; }
+  .an-panel.dashed { border-style:dashed; border-color:#2a3350; }
+  .an-panel h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; color:#e8ecf4; }
+  .an-panel .an-panel-sub { font-size: 12px; color: var(--an-text-faint); margin-bottom: 14px; }
+  .an-panel-head { display:flex; justify-content:space-between; align-items:flex-start; }
+
+  .an-legend-row { display:flex; gap:18px; margin-top:14px; flex-wrap:wrap; }
+  .an-legend-item { display:flex; align-items:center; gap:6px; font-size:12px; color: var(--an-text-dim); }
+  .an-legend-swatch { width:10px; height:10px; border-radius:2px; }
+
+  .an-table { width:100%; border-collapse: collapse; font-size: 13.5px; color:#e8ecf4; }
+  .an-table th { text-align:left; color: var(--an-text-faint); font-weight:600; font-size:11.5px; text-transform:uppercase; letter-spacing:0.04em; padding: 10px 12px; border-bottom: 1px solid var(--an-panel-border); }
+  .an-table td { padding: 11px 12px; border-bottom: 1px solid #10182a; }
+  .an-table tr:last-child td { border-bottom: none; }
+  .an-tag { display:inline-block; padding:3px 9px; border-radius:5px; font-size:11.5px; font-weight:700; }
+  .an-tag.buy { background: rgba(22,199,132,0.14); color: var(--an-green); }
+  .an-tag.sell { background: rgba(240,84,106,0.14); color: var(--an-red); }
+  .an-tag.soon { background: rgba(245,166,35,0.14); color: var(--an-amber); }
+  .an-pnl.pos { color: var(--an-green); font-weight:600; }
+  .an-pnl.neg { color: var(--an-red); font-weight:600; }
+
+  canvas { max-width: 100%; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+  <div class="an-page-head">
+    <div>
+      <h1 class="h3 fw-bold mb-0">Performance Analytics</h1>
+      <p>Your trading results and learning progress in one place.</p>
+    </div>
+    <div class="an-range-toggle">
+      <button class="{{ 'active' if range=='7d' else '' }}" data-range="7d">7D</button>
+      <button class="{{ 'active' if range=='30d' else '' }}" data-range="30d">30D</button>
+      <button class="{{ 'active' if range=='all' else '' }}" data-range="all">All&nbsp;Time</button>
+    </div>
+  </div>
+
+  <!-- ============ TRADING ANALYTICS ============ -->
+  <div class="an-section-label trading"><span class="an-dot"></span>Trading Performance</div>
+
+  <div class="row g-3">
+    <div class="col-6 col-lg-3">
+      <div class="an-stat-card">
+        <div class="an-label">Account Equity</div>
+        <div class="an-value">${{ "%.2f"|format(trading.equity) }}</div>
+        <div class="an-sub">Initial capital: ${{ "%.2f"|format(trading.initial_capital) }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="an-stat-card">
+        <div class="an-label">Total P&amp;L</div>
+        <div class="an-value {{ 'pos' if trading.total_pnl >= 0 else 'neg' }}">
+          {{ '+' if trading.total_pnl >= 0 else '' }}${{ "%.2f"|format(trading.total_pnl) }}
+        </div>
+        <div class="an-sub">{{ trading.total_trades }} trades closed</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="an-stat-card">
+        <div class="an-label">Win Rate</div>
+        <div class="an-value">{{ "%.1f"|format(trading.win_rate) }}%</div>
+        <div class="an-sub">{{ trading.wins }}W / {{ trading.losses }}L</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="an-stat-card">
+        <div class="an-label">Profit Factor</div>
+        <div class="an-value">{{ "%.2f"|format(trading.profit_factor) }}</div>
+        <div class="an-sub">Avg win ${{ "%.2f"|format(trading.avg_win) }} · Avg loss ${{ "%.2f"|format(trading.avg_loss) }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mt-1">
+    <div class="col-12 col-lg-8">
+      <div class="an-panel">
+        <div class="an-panel-head">
+          <div>
+            <h3>Equity Curve</h3>
+            <div class="an-panel-sub">Simulated account balance over time</div>
+          </div>
+        </div>
+        <canvas id="equityChart" height="90"></canvas>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+      <div class="an-panel">
+        <div class="an-panel-head">
+          <div>
+            <h3>Win / Loss Split</h3>
+            <div class="an-panel-sub">By closed trade count</div>
+          </div>
+        </div>
+        <canvas id="winLossChart" height="180"></canvas>
+        <div class="an-legend-row">
+          <div class="an-legend-item"><span class="an-legend-swatch" style="background:var(--an-green)"></span>Wins ({{ trading.wins }})</div>
+          <div class="an-legend-item"><span class="an-legend-swatch" style="background:var(--an-red)"></span>Losses ({{ trading.losses }})</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="an-panel mt-3">
+    <div class="an-panel-head">
+      <div>
+        <h3>Recent Trades</h3>
+        <div class="an-panel-sub">Last {{ trading.recent_trades|length }} closed positions</div>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="an-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Pair</th>
+            <th>Type</th>
+            <th>Entry</th>
+            <th>Exit</th>
+            <th>Volume</th>
+            <th>P&amp;L</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in trading.recent_trades %}
+          <tr>
+            <td>{{ t.date }}</td>
+            <td>{{ t.pair }}</td>
+            <td><span class="an-tag {{ 'buy' if t.type=='BUY' else 'sell' }}">{{ t.type }}</span></td>
+            <td>{{ t.entry }}</td>
+            <td>{{ t.exit }}</td>
+            <td>{{ t.volume }} lots</td>
+            <td class="an-pnl {{ 'pos' if t.pnl >= 0 else 'neg' }}">{{ '+' if t.pnl >= 0 else '' }}${{ "%.2f"|format(t.pnl) }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" style="color:var(--an-text-faint); text-align:center; padding:24px;">No trades yet — open a position in the Trading Terminal to see it here.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============ LEARNING ANALYTICS ============ -->
+  <div class="an-section-label learning"><span class="an-dot"></span>Learning Progress</div>
+
+  <div class="row g-3">
+    <div class="col-6 col-md-4">
+      <div class="an-stat-card learning">
+        <div class="an-label">Lessons Available</div>
+        <div class="an-value">{{ learning.total_lessons }}</div>
+        <div class="an-sub">Published in Trading Academy</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="an-stat-card learning">
+        <div class="an-label">Quizzes Available</div>
+        <div class="an-value">{{ learning.total_quizzes }}</div>
+        <div class="an-sub">Linked to lessons above</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="an-panel dashed mt-3">
+    <div class="an-panel-head">
+      <div>
+        <h3>Quiz &amp; Progress Analytics</h3>
+        <div class="an-panel-sub">This section activates automatically once quiz attempts are saved to the database</div>
+      </div>
+      <span class="an-tag soon">Coming Soon</span>
+    </div>
+    <p style="color:var(--an-text-dim); font-size:13.5px; margin-top:10px; line-height:1.6;">
+      Once the quiz feature records results per user, this space will show:
+    </p>
+    <ul style="color:var(--an-text-dim); font-size:13.5px; margin:10px 0 0 20px; line-height:1.9;">
+      <li>Overall lesson completion % and a per-lesson progress list</li>
+      <li>Average quiz score and score trend over time</li>
+      <li>A table of recent quiz attempts with pass/fail badges</li>
+    </ul>
+  </div>
+
+  {# ============================================================
+       READY TO ENABLE — once app/models.py has a QuizAttempt model
+       (user_id, quiz_id, score, total_questions, taken_at) and the
+       quiz() view in routes.py saves an attempt on submit, swap the
+       block above for this one. It expects the same `learning` dict
+       shape documented in routes_additions_v2.py:
+       overall_progress_pct, courses_completed/total_courses,
+       quiz_avg_score, lessons_completed, courses[], recent_quizzes[]
+  ================================================================
+  <div class="row g-3">
+    <div class="col-6 col-lg-3">
+      <div class="an-stat-card learning">
+        <div class="an-label">Overall Progress</div>
+        <div class="an-value">{{ "%.0f"|format(learning.overall_progress_pct) }}%</div>
+        <div class="an-sub">{{ learning.courses_completed }} of {{ learning.total_courses }} lessons completed</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="an-stat-card learning">
+        <div class="an-label">Average Quiz Score</div>
+        <div class="an-value">{{ "%.0f"|format(learning.quiz_avg_score) }}%</div>
+        <div class="an-sub">Across {{ learning.recent_quizzes|length }} quizzes</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="an-stat-card learning">
+        <div class="an-label">Lessons Completed</div>
+        <div class="an-value">{{ learning.lessons_completed }}</div>
+        <div class="an-sub">of {{ learning.total_lessons }} total lessons</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="an-stat-card learning">
+        <div class="an-label">Study Streak</div>
+        <div class="an-value">{{ learning.streak_days }} days</div>
+        <div class="an-sub">Keep it going 🔥</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mt-1">
+    <div class="col-12 col-lg-6">
+      <div class="an-panel">
+        <div class="an-panel-head">
+          <div>
+            <h3>Lesson Progress</h3>
+            <div class="an-panel-sub">Completed = quiz attempted for that lesson</div>
+          </div>
+        </div>
+        {% for c in learning.courses %}
+        <div class="mb-3">
+          <div class="d-flex justify-content-between small mb-1">
+            <span>{{ c.name }}</span>
+            <span class="text-secondary">{{ c.progress }}%</span>
+          </div>
+          <div class="progress" style="height:7px; background:#1a2338;">
+            <div class="progress-bar" data-progress="{{ c.progress }}" style="background: linear-gradient(90deg, var(--an-amber), #ffcf6b);"></div>
+          </div>
+        </div>
+        {% else %}
+        <p style="color:var(--an-text-faint); font-size:13.5px;">No lessons available yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+      <div class="an-panel">
+        <div class="an-panel-head">
+          <div>
+            <h3>Recent Quiz Scores</h3>
+            <div class="an-panel-sub">Most recent attempts</div>
+          </div>
+        </div>
+        {% for q in learning.recent_quizzes %}
+        <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-secondary border-opacity-25">
+          <span class="small">{{ q.name }}</span>
+          <span class="an-tag {{ 'buy' if q.score >= 80 else ('soon' if q.score >= 50 else 'sell') }}">{{ q.score }}%</span>
+        </div>
+        {% else %}
+        <p style="color:var(--an-text-faint); font-size:13.5px;">No quizzes attempted yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  #}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script id="analytics-data" type="application/json">{{ {
+  'equity_labels': trading.equity_curve | map(attribute='date') | list,
+  'equity_values': trading.equity_curve | map(attribute='value') | list,
+  'wins': trading.wins,
+  'losses': trading.losses,
+  'analytics_url': url_for('main.analytics')
+}|tojson }}</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+  const analyticsData = JSON.parse(document.getElementById('analytics-data').textContent || '{}');
+  const equityLabels = analyticsData.equity_labels || [];
+  const equityValues = analyticsData.equity_values || [];
+
+  new Chart(document.getElementById('equityChart'), {
+    type: 'line',
+    data: {
+      labels: equityLabels,
+      datasets: [{
+        data: equityValues,
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59,130,246,0.12)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        pointBackgroundColor: '#3b82f6',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#1a2338' }, ticks: { color: '#5b6580', maxTicksLimit: 7 } },
+        y: { grid: { color: '#1a2338' }, ticks: { color: '#5b6580' } }
+      }
+    }
+  });
+
+  new Chart(document.getElementById('winLossChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Wins', 'Losses'],
+      datasets: [{
+        data: [analyticsData.wins || 0, analyticsData.losses || 0],
+        backgroundColor: ['#16c784', '#f0546a'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      cutout: '68%',
+      plugins: { legend: { display: false } }
+    }
+  });
+
+  // Initialize progress bar widths from data-progress attributes
+  document.querySelectorAll('.progress-bar[data-progress]').forEach(el => {
+    const v = Number(el.getAttribute('data-progress')) || 0;
+    el.style.width = v + '%';
+  });
+
+  document.querySelectorAll('.an-range-toggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const base = analyticsData.analytics_url || window.location.pathname;
+      window.location.href = base + '?range=' + btn.dataset.range;
+    });
+  });
+</script>
+{% endblock %}

@@ -22,7 +22,7 @@
     </div>
 
     <div class="row g-4">
-        <div class="col-md-4">
+        <div class="col-md-6 col-lg-3">
             <div class="trading-card h-100 p-4">
                 <div class="mb-3 text-primary fs-1">
                     <i class="bi bi-graph-up-arrow"></i>
@@ -35,7 +35,20 @@
             </div>
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-6 col-lg-3">
+            <div class="trading-card h-100 p-4">
+                <div class="mb-3 text-success fs-1">
+                    <i class="bi bi-bar-chart-line"></i>
+                </div>
+                <h4 class="fw-bold">Analytics</h4>
+                <p class="text-secondary small">Track your trading performance, win rate, equity curve, and learning progress in one dashboard.</p>
+                <a href="{{ url_for('main.analytics') }}" class="btn btn-outline-success btn-sm w-100 mt-2">
+                    View Analytics
+                </a>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
             <div class="trading-card h-100 p-4">
                 <div class="mb-3 text-warning fs-1">
                     <i class="bi bi-book"></i>
@@ -48,7 +61,7 @@
             </div>
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-6 col-lg-3">
             <div class="trading-card h-100 p-4">
                 <div class="mb-3 text-info fs-1">
                     <i class="bi bi-person-gear"></i>

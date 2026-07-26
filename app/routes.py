@@ -1,10 +1,11 @@
 from flask import Blueprint, render_template, redirect, request, url_for, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import login_user, logout_user, login_required
+from flask_login import login_user, logout_user, login_required, current_user
+from datetime import datetime, timedelta
 
 from .forms import RegisterForm, LoginForm
-from .models import  Question, Quiz,Lesson
-from .models import User, TradingAccount
+from .models import  Question, Quiz, Lesson
+from .models import User, TradingAccount, Trade
 from . import db
 
 main = Blueprint("main", __name__)
@@ -121,3 +122,85 @@ def quiz(id):
 
 
     return render_template("quiz.html", quiz=quiz,questions=questions,score=score)
+
+
+@main.route("/analytics")
+@login_required
+def analytics():
+    range_param = request.args.get("range", "30d")
+
+    since = None
+    if range_param == "7d":
+        since = datetime.utcnow() - timedelta(days=7)
+    elif range_param == "30d":
+        since = datetime.utcnow() - timedelta(days=30)
+    # "all" -> since stays None
+
+    account = TradingAccount.query.filter_by(user_id=current_user.id).first()
+
+    trade_query = Trade.query.filter_by(user_id=current_user.id, status="CLOSED")
+    if since:
+        trade_query = trade_query.filter(Trade.closed_at >= since)
+    trades = trade_query.order_by(Trade.closed_at.asc()).all()
+
+    wins = [t for t in trades if (t.profit_loss or 0) >= 0]
+    losses = [t for t in trades if (t.profit_loss or 0) < 0]
+    total_pnl = sum(t.profit_loss or 0 for t in trades)
+    avg_win = (sum(t.profit_loss for t in wins) / len(wins)) if wins else 0
+    avg_loss = (abs(sum(t.profit_loss for t in losses)) / len(losses)) if losses else 0
+    gross_loss = abs(sum(t.profit_loss for t in losses))
+    profit_factor = (sum(t.profit_loss for t in wins) / gross_loss) if gross_loss else 0.0
+
+    # Equity curve always starts with a real "Start" point, then one point
+    # per closed trade. This guarantees at least 2 points so the line chart
+    # always has something to draw, even for a brand-new account.
+    starting_balance = round((account.balance if account else 10000.00) - total_pnl, 2)
+    running = starting_balance
+    equity_curve = [{"date": "Start", "value": starting_balance}]
+    for t in trades:
+        running += (t.profit_loss or 0)
+        equity_curve.append({
+            "date": t.closed_at.strftime("%b %d") if t.closed_at else "",
+            "value": round(running, 2),
+        })
+
+    trading = {
+        "equity": account.equity if account else 10000.00,
+        "initial_capital": 10000.00,
+        "total_pnl": total_pnl,
+        "total_trades": len(trades),
+        "wins": len(wins),
+        "losses": len(losses),
+        "win_rate": (len(wins) / len(trades) * 100) if trades else 0,
+        "profit_factor": profit_factor,
+        "avg_win": avg_win,
+        "avg_loss": avg_loss,
+        "equity_curve": equity_curve,
+        "recent_trades": [
+            {
+                "date": t.closed_at.strftime("%Y-%m-%d") if t.closed_at else "-",
+                "pair": t.pair,
+                "type": t.trade_type,
+                "entry": t.open_price,
+                "exit": t.close_price,
+                "volume": t.lot_size,
+                "pnl": t.profit_loss or 0,
+            }
+            for t in reversed(trades[-10:])
+        ],
+    }
+
+    # Learning: only counts of what exists — no per-user progress yet since
+    # quiz attempts aren't saved anywhere in the current schema. The template
+    # shows this as real numbers plus a "Coming Soon" panel for the rest.
+    learning = {
+        "total_lessons": Lesson.query.count(),
+        "total_quizzes": Quiz.query.count(),
+    }
+
+    return render_template(
+        "analytics.html",
+        trading=trading,
+        learning=learning,
+        range=range_param,
+    )
