@@ -1,23 +1,243 @@
 {% extends "base.html" %}
 
-{% block title %}Profile{% endblock %}
+{% block title %}Trader Profile & Settings - Forex Trading Academy{% endblock %}
 
 {% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Profile Banner Hero -->
+    <div class="profile-banner mb-4">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-4 relative-z1">
+            <div class="d-flex align-items-center gap-3">
+                <div class="avatar-circle">
+                    {{ current_user.username[0]|upper if current_user.username else 'U' }}
+                </div>
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <h3 class="fw-bold mb-0 text-light">{{ current_user.username }}</h3>
+                        <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25 px-2 py-1 rounded-pill small">
+                            <i class="bi bi-shield-check me-1"></i> Active Trader
+                        </span>
+                    </div>
+                    <p class="text-secondary small mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-envelope"></i> {{ current_user.email }}
+                        <span class="text-muted">•</span>
+                        <i class="bi bi-credit-card-2-front"></i> Demo Account #{{ account.id if account else 'N/A' }}
+                    </p>
+                </div>
+            </div>
 
-<div class="card shadow">
-
-    <div class="card-header">
-        <h3>My Profile</h3>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ url_for('trading.trading_dashboard') }}" class="btn btn-primary btn-sm px-3 py-2 d-flex align-items-center gap-2 shadow-sm">
+                    <i class="bi bi-display"></i> Trading Terminal
+                </a>
+                <a href="{{ url_for('main.analytics') }}" class="btn btn-outline-light btn-sm px-3 py-2 d-flex align-items-center gap-2">
+                    <i class="bi bi-bar-chart-line"></i> Analytics
+                </a>
+            </div>
+        </div>
     </div>
 
-    <div class="card-body">
+    <!-- Key Trading Account KPI Metrics -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="kpi-card kpi-green">
+                <div class="kpi-label"><i class="bi bi-wallet2 me-1"></i> Account Balance</div>
+                <div class="kpi-value">${{ "%.2f"|format(stats.balance) }}</div>
+                <div class="kpi-sub">Simulated Trading Funds</div>
+            </div>
+        </div>
 
-        <p><strong>Username:</strong> {{ current_user.username }}</p>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="kpi-card">
+                <div class="kpi-label"><i class="bi bi-graph-up me-1"></i> Account Equity</div>
+                <div class="kpi-value">${{ "%.2f"|format(stats.equity) }}</div>
+                <div class="kpi-sub">Real-time Open Valuation</div>
+            </div>
+        </div>
 
-        <p><strong>Email:</strong> {{ current_user.email }}</p>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="kpi-card kpi-gold">
+                <div class="kpi-label"><i class="bi bi-arrow-left-right me-1"></i> Executed Trades</div>
+                <div class="kpi-value">{{ stats.total_trades }}</div>
+                <div class="kpi-sub">{{ stats.open_trades }} Open Position(s)</div>
+            </div>
+        </div>
 
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="kpi-card {{ 'kpi-green' if stats.win_rate >= 50 else 'kpi-red' }}">
+                <div class="kpi-label"><i class="bi bi-pie-chart me-1"></i> Trade Win Rate</div>
+                <div class="kpi-value">{{ "%.1f"|format(stats.win_rate) }}%</div>
+                <div class="kpi-sub">{{ stats.closed_trades }} Closed Positions</div>
+            </div>
+        </div>
     </div>
 
+    <!-- Profile Settings & Tabs Section -->
+    <div class="row g-4">
+        <div class="col-12 col-lg-8">
+            <div class="trading-card">
+                <div class="trading-card-header bg-transparent">
+                    <ul class="nav nav-pills nav-pills-profile card-header-pills" id="profileTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="details-tab" data-bs-toggle="pill" data-bs-target="#details" type="button" role="tab">
+                                <i class="bi bi-person-gear me-1"></i> Account Details
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="security-tab" data-bs-toggle="pill" data-bs-target="#security" type="button" role="tab">
+                                <i class="bi bi-lock me-1"></i> Security & Password
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="trading-card-body">
+                    <div class="tab-content" id="profileTabsContent">
+
+                        <!-- Tab 1: Profile Information -->
+                        <div class="tab-pane fade show active" id="details" role="tabpanel">
+                            <h5 class="fw-bold mb-3 text-light">Edit Profile Details</h5>
+                            <form method="POST">
+                                {{ profile_form.hidden_tag() }}
+                                <input type="hidden" name="form_type" value="profile">
+
+                                <div class="mb-3">
+                                    <label for="username" class="form-label-sm">Username</label>
+                                    <div class="input-group-auth">
+                                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                        {{ profile_form.username(class="form-control" + (" is-invalid" if profile_form.username.errors else ""), id="username") }}
+                                    </div>
+                                    {% for error in profile_form.username.errors %}
+                                        <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="mb-4">
+                                    <label for="email" class="form-label-sm">Email Address</label>
+                                    <div class="input-group-auth">
+                                        <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                                        {{ profile_form.email(class="form-control" + (" is-invalid" if profile_form.email.errors else ""), id="email") }}
+                                    </div>
+                                    {% for error in profile_form.email.errors %}
+                                        <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <button type="submit" class="btn btn-primary d-flex align-items-center gap-2">
+                                    <i class="bi bi-check2-circle"></i> Save Changes
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Tab 2: Security & Password -->
+                        <div class="tab-pane fade" id="security" role="tabpanel">
+                            <h5 class="fw-bold mb-3 text-light">Change Password</h5>
+                            <form method="POST">
+                                {{ password_form.hidden_tag() }}
+                                <input type="hidden" name="form_type" value="password">
+
+                                <div class="mb-3">
+                                    <label for="current_password" class="form-label-sm">Current Password</label>
+                                    <div class="input-group-auth">
+                                        <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
+                                        {{ password_form.current_password(class="form-control" + (" is-invalid" if password_form.current_password.errors else ""), placeholder="••••••••", id="current_password") }}
+                                    </div>
+                                    {% for error in password_form.current_password.errors %}
+                                        <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="new_password" class="form-label-sm">New Password</label>
+                                    <div class="input-group-auth">
+                                        <span class="input-group-text"><i class="bi bi-key"></i></span>
+                                        {{ password_form.new_password(class="form-control" + (" is-invalid" if password_form.new_password.errors else ""), placeholder="Minimum 6 characters", id="new_password") }}
+                                    </div>
+                                    {% for error in password_form.new_password.errors %}
+                                        <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="mb-4">
+                                    <label for="confirm_password" class="form-label-sm">Confirm New Password</label>
+                                    <div class="input-group-auth">
+                                        <span class="input-group-text"><i class="bi bi-key-fill"></i></span>
+                                        {{ password_form.confirm_password(class="form-control" + (" is-invalid" if password_form.confirm_password.errors else ""), placeholder="Re-enter new password", id="confirm_password") }}
+                                    </div>
+                                    {% for error in password_form.confirm_password.errors %}
+                                        <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <button type="submit" class="btn btn-warning text-dark fw-semibold d-flex align-items-center gap-2">
+                                    <i class="bi bi-shield-check"></i> Update Password
+                                </button>
+                            </form>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side Account Overview Card & Shortcuts -->
+        <div class="col-12 col-lg-4">
+            <div class="trading-card mb-4">
+                <div class="trading-card-header">
+                    <h6 class="trading-card-title"><i class="bi bi-info-circle text-primary"></i> Account Summary</h6>
+                </div>
+                <div class="trading-card-body">
+                    <ul class="list-group list-group-flush bg-transparent">
+                        <li class="list-group-item bg-transparent text-secondary d-flex justify-content-between px-0 border-secondary opacity-75">
+                            <span>Account Status</span>
+                            <span class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i> Active</span>
+                        </li>
+                        <li class="list-group-item bg-transparent text-secondary d-flex justify-content-between px-0 border-secondary opacity-75">
+                            <span>Account Type</span>
+                            <span class="text-light fw-semibold">Paper / Demo</span>
+                        </li>
+                        <li class="list-group-item bg-transparent text-secondary d-flex justify-content-between px-0 border-secondary opacity-75">
+                            <span>Default Leverage</span>
+                            <span class="text-light fw-semibold">1:100</span>
+                        </li>
+                        <li class="list-group-item bg-transparent text-secondary d-flex justify-content-between px-0 border-0">
+                            <span>Total P&L</span>
+                            <span class="{{ 'text-success' if stats.total_pnl >= 0 else 'text-danger' }} fw-bold">
+                                {{ '+' if stats.total_pnl > 0 else '' }}${{ "%.2f"|format(stats.total_pnl) }}
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Quick Navigation Shortcuts -->
+            <div class="d-flex flex-column gap-3">
+                <a href="{{ url_for('trading.trading_dashboard') }}" class="shortcut-card">
+                    <div class="shortcut-icon"><i class="bi bi-sliders"></i></div>
+                    <div>
+                        <div class="fw-semibold">Trading Terminal</div>
+                        <div class="small text-secondary">Execute simulated forex orders</div>
+                    </div>
+                </a>
+
+                <a href="{{ url_for('main.analytics') }}" class="shortcut-card">
+                    <div class="shortcut-icon"><i class="bi bi-graph-up-arrow"></i></div>
+                    <div>
+                        <div class="fw-semibold">Performance Analytics</div>
+                        <div class="small text-secondary">Track win rate & equity curve</div>
+                    </div>
+                </a>
+
+                <a href="{{ url_for('main.dashboard') }}" class="shortcut-card">
+                    <div class="shortcut-icon"><i class="bi bi-book"></i></div>
+                    <div>
+                        <div class="fw-semibold">Academy Lessons</div>
+                        <div class="small text-secondary">Learn trading concepts & quizzes</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
 </div>
-
-{% endblock %} 
+{% endblock %}
+ 

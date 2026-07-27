@@ -62,7 +62,7 @@ def trading_dashboard():
 
     pairs = CurrencyPair.query.all()
 
-    # Calculate live simulated P&L for open trades
+    # Calculate live simulated P & L for open trades
     total_floating_pnl = 0.0
     pair_price_map = {p.symbol: p for p in pairs}
 
@@ -200,3 +200,5 @@ def market_data():
         })
 
     return jsonify({"pairs": results})
+
+

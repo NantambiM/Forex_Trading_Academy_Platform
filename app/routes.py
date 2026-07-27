@@ -3,7 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
 from datetime import datetime, timedelta
 
-from .forms import RegisterForm, LoginForm
+from .forms import RegisterForm, LoginForm, UpdateProfileForm, ChangePasswordForm
 from .models import  Question, Quiz, Lesson
 from .models import User, TradingAccount, Trade
 from . import db
@@ -82,10 +82,68 @@ def dashboard():
     return render_template("dashboard.html")
 
 
-@main.route("/profile")
+@main.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
-    return render_template("profile.html")
+    profile_form = UpdateProfileForm()
+    password_form = ChangePasswordForm()
+
+    if request.method == "GET":
+        profile_form.username.data = current_user.username
+        profile_form.email.data = current_user.email
+
+    form_type = request.form.get("form_type")
+
+    if request.method == "POST" and form_type == "profile":
+        if profile_form.validate_on_submit():
+            existing_email = User.query.filter(User.email == profile_form.email.data, User.id != current_user.id).first()
+            existing_username = User.query.filter(User.username == profile_form.username.data, User.id != current_user.id).first()
+
+            if existing_email:
+                flash("That email is already registered to another account.", "danger")
+            elif existing_username:
+                flash("That username is already taken.", "danger")
+            else:
+                current_user.username = profile_form.username.data
+                current_user.email = profile_form.email.data
+                db.session.commit()
+                flash("Profile details updated successfully!", "success")
+                return redirect(url_for("main.profile"))
+
+    elif request.method == "POST" and form_type == "password":
+        if password_form.validate_on_submit():
+            if not check_password_hash(current_user.password, password_form.current_password.data):
+                flash("Incorrect current password.", "danger")
+            else:
+                current_user.password = generate_password_hash(password_form.new_password.data)
+                db.session.commit()
+                flash("Password updated successfully!", "success")
+                return redirect(url_for("main.profile"))
+
+    account = TradingAccount.query.filter_by(user_id=current_user.id).first()
+    all_trades = Trade.query.filter_by(user_id=current_user.id).all()
+    closed_trades = [t for t in all_trades if t.status == "CLOSED"]
+    winning_trades = [t for t in closed_trades if (t.profit_loss or 0) >= 0]
+    total_pnl = sum(t.profit_loss or 0 for t in closed_trades)
+    win_rate = (len(winning_trades) / len(closed_trades) * 100) if closed_trades else 0.0
+
+    stats = {
+        "balance": account.balance if account else 10000.00,
+        "equity": account.equity if account else 10000.00,
+        "total_trades": len(all_trades),
+        "closed_trades": len(closed_trades),
+        "open_trades": len(all_trades) - len(closed_trades),
+        "win_rate": win_rate,
+        "total_pnl": total_pnl
+    }
+
+    return render_template(
+        "profile.html",
+        profile_form=profile_form,
+        password_form=password_form,
+        account=account,
+        stats=stats
+    )
 
 
 @main.route("/logout")
