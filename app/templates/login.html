@@ -5,9 +5,32 @@
 {% block content %}
 <div class="auth-wrapper">
     <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-12 col-md-8 col-lg-5">
-                <div class="auth-card">
+        <div class="row justify-content-center align-items-stretch g-4">
+            <!-- Left Side Image Hero -->
+            <div class="col-12 col-lg-6 d-none d-lg-block">
+                <div class="auth-hero-img-container">
+                    <img src="{{ url_for('static', filename='img/f1.png') }}" alt="Forex Workstation" class="auth-hero-img-bg">
+                    <div class="auth-hero-overlay">
+                        <span class="badge bg-primary bg-opacity-75 text-light mb-2 px-3 py-1 rounded-pill small fw-semibold">
+                            <i class="bi bi-display me-1"></i> Multi-Chart Terminal
+                        </span>
+                        <h3 class="fw-bold text-light mb-2">Simulated Live Trading</h3>
+                        <p class="text-secondary small mb-3">Analyze technical indicators, monitor price action, and execute market orders in a risk-free paper trading environment.</p>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="d-flex align-items-center gap-2 text-success small fw-semibold">
+                                <i class="bi bi-graph-up-arrow"></i> Real-time Tickers
+                            </div>
+                            <div class="d-flex align-items-center gap-2 text-info small fw-semibold">
+                                <i class="bi bi-shield-check"></i> $10k Virtual Balance
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side Form Card -->
+            <div class="col-12 col-md-8 col-lg-6">
+                <div class="auth-card h-100 d-flex flex-column justify-content-center">
                     <div class="auth-header">
                         <div class="brand-badge">
                             <i class="bi bi-graph-up-arrow"></i>
@@ -65,11 +88,6 @@
                             </p>
                         </div>
                     </div>
-                </div>
-
-                <div class="mt-4 d-flex align-items-center justify-content-center gap-4 text-secondary small">
-                    <span><i class="bi bi-shield-check text-success me-1"></i> Secure Session</span>
-                    <span><i class="bi bi-lightning-charge text-warning me-1"></i> Real-time Quotes</span>
                 </div>
             </div>
         </div>

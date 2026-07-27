@@ -5,47 +5,42 @@
 {% block content %}
 <div class="auth-wrapper">
     <div class="container">
-        <div class="row justify-content-center align-items-center g-4">
-            <!-- Left Side Features (On larger screens) -->
-            <div class="col-12 col-lg-5 d-none d-lg-block pe-lg-4">
-                <div class="mb-4">
-                    <span class="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill small fw-semibold">
-                        <i class="bi bi-rocket-takeoff me-1"></i> Start Paper Trading
-                    </span>
-                    <h2 class="display-6 fw-bold mt-3 text-light">Master Forex Markets Risk-Free</h2>
-                    <p class="text-secondary">Join the Forex Trading Academy platform to practice with simulated capital, study interactive lessons, and track performance analytics.</p>
-                </div>
-
-                <div class="d-flex flex-column gap-3">
-                    <div class="auth-feature-badge">
-                        <i class="bi bi-wallet2 text-success"></i>
-                        <div>
-                            <div class="fw-semibold text-light">$10,000 Virtual Capital</div>
-                            <div class="small text-secondary">Instant demo account created upon registration</div>
+        <div class="row justify-content-center align-items-stretch g-4">
+            <!-- Left Side Image Hero Showcase -->
+            <div class="col-12 col-lg-6 d-none d-lg-block">
+                <div class="auth-hero-img-container">
+                    <img src="{{ url_for('static', filename='img/f2.jpg') }}" alt="Futuristic Trading Desk" class="auth-hero-img-bg">
+                    <div class="auth-hero-overlay">
+                        <span class="badge bg-primary bg-opacity-75 text-light mb-2 px-3 py-1 rounded-pill small fw-semibold">
+                            <i class="bi bi-rocket-takeoff me-1"></i> Start Paper Trading
+                        </span>
+                        <h3 class="fw-bold text-light mb-2">Master Forex Markets Risk-Free</h3>
+                        <p class="text-secondary small mb-3">Join thousands of traders practicing strategy execution on desktop and mobile devices with zero financial risk.</p>
+                        
+                        <!-- Inline Preview Feature Card with f5.jpg -->
+                        <div class="img-card-preview mb-3">
+                            <img src="{{ url_for('static', filename='img/f5.jpg') }}" alt="Mobile & Laptop Trading">
+                            <div class="img-card-overlay-tag d-flex align-items-center justify-content-between">
+                                <span class="small text-light fw-semibold"><i class="bi bi-phone text-success me-1"></i> Cross-Platform Access</span>
+                                <span class="badge bg-success bg-opacity-25 text-success small">$10k Instant Capital</span>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="auth-feature-badge">
-                        <i class="bi bi-journal-code text-info"></i>
-                        <div>
-                            <div class="fw-semibold text-light">Interactive Academy</div>
-                            <div class="small text-secondary">Comprehensive curriculum & skill assessments</div>
-                        </div>
-                    </div>
-
-                    <div class="auth-feature-badge">
-                        <i class="bi bi-speedometer2 text-warning"></i>
-                        <div>
-                            <div class="fw-semibold text-light">Advanced Analytics</div>
-                            <div class="small text-secondary">Live equity curves, trade logs, and win rates</div>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="d-flex align-items-center gap-2 text-warning small fw-semibold">
+                                <i class="bi bi-speedometer2"></i> Advanced Analytics
+                            </div>
+                            <div class="d-flex align-items-center gap-2 text-info small fw-semibold">
+                                <i class="bi bi-journal-code"></i> Interactive Curriculum
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Registration Card -->
-            <div class="col-12 col-md-8 col-lg-5">
-                <div class="auth-card">
+            <!-- Right Side Registration Card -->
+            <div class="col-12 col-md-8 col-lg-6">
+                <div class="auth-card h-100 d-flex flex-column justify-content-center">
                     <div class="auth-header">
                         <div class="brand-badge">
                             <i class="bi bi-person-plus"></i>

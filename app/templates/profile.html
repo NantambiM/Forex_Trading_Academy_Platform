@@ -4,8 +4,8 @@
 
 {% block content %}
 <div class="container-fluid px-4 py-4">
-    <!-- Profile Banner Hero -->
-    <div class="profile-banner mb-4">
+    <!-- Profile Banner Hero with f4.jpg Background -->
+    <div class="profile-banner profile-banner-with-bg mb-4">
         <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-4 relative-z1">
             <div class="d-flex align-items-center gap-3">
                 <div class="avatar-circle">
@@ -182,6 +182,15 @@
 
         <!-- Right Side Account Overview Card & Shortcuts -->
         <div class="col-12 col-lg-4">
+            <!-- Market Momentum Image Card with f3.jpg -->
+            <div class="img-card-preview mb-4">
+                <img src="{{ url_for('static', filename='img/f3.jpg') }}" alt="Market Trend & Momentum">
+                <div class="img-card-overlay-tag d-flex align-items-center justify-content-between">
+                    <span class="small text-light fw-semibold"><i class="bi bi-graph-up-arrow text-success me-1"></i> Market Momentum</span>
+                    <span class="badge bg-primary bg-opacity-25 text-primary small">Live Signals</span>
+                </div>
+            </div>
+
             <div class="trading-card mb-4">
                 <div class="trading-card-header">
                     <h6 class="trading-card-title"><i class="bi bi-info-circle text-primary"></i> Account Summary</h6>
