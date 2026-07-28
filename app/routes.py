@@ -1,10 +1,11 @@
 from flask import Blueprint, render_template, redirect, request, url_for, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import login_user, logout_user, login_required
-
-from .forms import RegisterForm, LoginForm
+from flask_login import login_user, logout_user, login_required, current_user
+from datetime import datetime, timedelta
 from .models import  Course, Question, Quiz,Lesson
 from .models import User, TradingAccount
+from .forms import RegisterForm, LoginForm, UpdateProfileForm, ChangePasswordForm
+from .models import User, TradingAccount, Trade
 from . import db
 
 main = Blueprint("main", __name__)
@@ -81,10 +82,68 @@ def dashboard():
     return render_template("dashboard.html")
 
 
-@main.route("/profile")
+@main.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
-    return render_template("profile.html")
+    profile_form = UpdateProfileForm()
+    password_form = ChangePasswordForm()
+
+    if request.method == "GET":
+        profile_form.username.data = current_user.username
+        profile_form.email.data = current_user.email
+
+    form_type = request.form.get("form_type")
+
+    if request.method == "POST" and form_type == "profile":
+        if profile_form.validate_on_submit():
+            existing_email = User.query.filter(User.email == profile_form.email.data, User.id != current_user.id).first()
+            existing_username = User.query.filter(User.username == profile_form.username.data, User.id != current_user.id).first()
+
+            if existing_email:
+                flash("That email is already registered to another account.", "danger")
+            elif existing_username:
+                flash("That username is already taken.", "danger")
+            else:
+                current_user.username = profile_form.username.data
+                current_user.email = profile_form.email.data
+                db.session.commit()
+                flash("Profile details updated successfully!", "success")
+                return redirect(url_for("main.profile"))
+
+    elif request.method == "POST" and form_type == "password":
+        if password_form.validate_on_submit():
+            if not check_password_hash(current_user.password, password_form.current_password.data):
+                flash("Incorrect current password.", "danger")
+            else:
+                current_user.password = generate_password_hash(password_form.new_password.data)
+                db.session.commit()
+                flash("Password updated successfully!", "success")
+                return redirect(url_for("main.profile"))
+
+    account = TradingAccount.query.filter_by(user_id=current_user.id).first()
+    all_trades = Trade.query.filter_by(user_id=current_user.id).all()
+    closed_trades = [t for t in all_trades if t.status == "CLOSED"]
+    winning_trades = [t for t in closed_trades if (t.profit_loss or 0) >= 0]
+    total_pnl = sum(t.profit_loss or 0 for t in closed_trades)
+    win_rate = (len(winning_trades) / len(closed_trades) * 100) if closed_trades else 0.0
+
+    stats = {
+        "balance": account.balance if account else 10000.00,
+        "equity": account.equity if account else 10000.00,
+        "total_trades": len(all_trades),
+        "closed_trades": len(closed_trades),
+        "open_trades": len(all_trades) - len(closed_trades),
+        "win_rate": win_rate,
+        "total_pnl": total_pnl
+    }
+
+    return render_template(
+        "profile.html",
+        profile_form=profile_form,
+        password_form=password_form,
+        account=account,
+        stats=stats
+    )
 
 
 @main.route("/logout")
@@ -125,3 +184,80 @@ def quiz(id):
 def courses():
     courses = Course.query.all()
     return render_template("courses.html", courses=courses)
+
+
+@main.route("/analytics")
+@login_required
+def analytics():
+    range_param = request.args.get("range", "30d")
+
+    since = None
+    if range_param == "7d":
+        since = datetime.utcnow() - timedelta(days=7)
+    elif range_param == "30d":
+        since = datetime.utcnow() - timedelta(days=30)
+    # "all" -> since stays None
+
+    account = TradingAccount.query.filter_by(user_id=current_user.id).first()
+
+    trade_query = Trade.query.filter_by(user_id=current_user.id, status="CLOSED")
+    if since:
+        trade_query = trade_query.filter(Trade.closed_at >= since)
+    trades = trade_query.order_by(Trade.closed_at.asc()).all()
+
+    wins = [t for t in trades if (t.profit_loss or 0) >= 0]
+    losses = [t for t in trades if (t.profit_loss or 0) < 0]
+    total_pnl = sum(t.profit_loss or 0 for t in trades)
+    avg_win = (sum(t.profit_loss for t in wins) / len(wins)) if wins else 0
+    avg_loss = (abs(sum(t.profit_loss for t in losses)) / len(losses)) if losses else 0
+    gross_loss = abs(sum(t.profit_loss for t in losses))
+    profit_factor = (sum(t.profit_loss for t in wins) / gross_loss) if gross_loss else 0.0
+
+    starting_balance = round((account.balance if account else 10000.00) - total_pnl, 2)
+    running = starting_balance
+    equity_curve = [{"date": "Start", "value": starting_balance}]
+    for t in trades:
+        running += (t.profit_loss or 0)
+        equity_curve.append({
+            "date": t.closed_at.strftime("%b %d") if t.closed_at else "",
+            "value": round(running, 2),
+        })
+
+    trading = {
+        "equity": account.equity if account else 10000.00,
+        "initial_capital": 10000.00,
+        "total_pnl": total_pnl,
+        "total_trades": len(trades),
+        "wins": len(wins),
+        "losses": len(losses),
+        "win_rate": (len(wins) / len(trades) * 100) if trades else 0,
+        "profit_factor": profit_factor,
+        "avg_win": avg_win,
+        "avg_loss": avg_loss,
+        "equity_curve": equity_curve,
+        "recent_trades": [
+            {
+                "date": t.closed_at.strftime("%Y-%m-%d") if t.closed_at else "-",
+                "pair": t.pair,
+                "type": t.trade_type,
+                "entry": t.open_price,
+                "exit": t.close_price,
+                "volume": t.lot_size,
+                "pnl": t.profit_loss or 0,
+            }
+            for t in reversed(trades[-10:])
+        ],
+    }
+
+    
+    learning = {
+        "total_lessons": Lesson.query.count(),
+        "total_quizzes": Quiz.query.count(),
+    }
+
+    return render_template(
+        "analytics.html",
+        trading=trading,
+        learning=learning,
+        range=range_param,
+    )
