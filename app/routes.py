@@ -2,9 +2,9 @@ from flask import Blueprint, render_template, redirect, request, url_for, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
 from datetime import datetime, timedelta
-
+from .models import  Course, Question, Quiz,Lesson
+from .models import User, TradingAccount
 from .forms import RegisterForm, LoginForm, UpdateProfileForm, ChangePasswordForm
-from .models import  Question, Quiz, Lesson
 from .models import User, TradingAccount, Trade
 from . import db
 
@@ -178,8 +178,12 @@ def quiz(id):
             if selected_option == question.correct_option:
                 score += 1
 
-
     return render_template("quiz.html", quiz=quiz,questions=questions,score=score)
+
+@main.route("/courses")
+def courses():
+    courses = Course.query.all()
+    return render_template("courses.html", courses=courses)
 
 
 @main.route("/analytics")

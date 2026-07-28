@@ -12,12 +12,21 @@ class User(UserMixin, db.Model):
     def __repr__(self):
         return f"<User {self.username}>" 
 
+
+class Course(db.Model):
+    id=db.Column(db.Integer, primary_key=True)
+    course_name=db.Column(db.String(100),unique=True)
+    description=db.Column(db.Text,nullable=False)
+    lessons=db.relationship('Lesson', backref='course', lazy=True,order_by='Lesson.id')
+
 class Lesson(db.Model):
     id=db.Column(db.Integer, primary_key=True)
     lesson_name=db.Column(db.String(100),unique=True)
     content=db.Column(db.Text,nullable=False)
     video_url=db.Column(db.String(255),nullable=True)
     quiz=db.relationship('Quiz', backref='lesson', lazy=True)
+    course_id=db.Column(db.Integer,db.ForeignKey('course.id'),nullable=False)
+    
 
 class Quiz(db.Model):
     id=db.Column(db.Integer, primary_key=True)
