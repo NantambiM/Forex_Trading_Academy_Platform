@@ -1,41 +1,143 @@
-{%extends 'base.html'%}
-{%block title%}
-    {{lesson.lesson_name}}
-{%endblock%}
-{%block content%}
-<h3>{{lesson.lesson_name}}</h3>
-{% if lesson.id <= 1 %}
-    <style>
-        .hidpre {
-            display: none;
-            align: left;
-        }
-    </style>
-{% endif %}
-{% if lesson.id >= 10 %}
-    <style>
-        .hidnext {
-            display: none;
-            align: right;
-        }
-    </style>
-{% endif %}
-<a href="/lesson/{{lesson.id-1}}" class="hidpre "><button>Previous</button></a>
+{% extends 'base.html' %}
 
+{% block title %}
+{{ lesson.lesson_name }}
+{% endblock %}
 
-<a href="/lesson/{{lesson.id+1}}" class="hidnext" ><button>Next</button></a><br><br>  
+{% block content %}
 
-{% if lesson.video_url %}
-    <iframe width="560" height="315" src="{{lesson.video_url}}" frameborder="0" allowfullscreen></iframe>
-    <br><a href="{{lesson.video_url}}">View Video</a><br><br>
-{% endif %}
+<div class="container my-5">
 
-<p>{{lesson.content}}</p>
+    <div class="card border-0 shadow-lg rounded-4">
 
-<a href="/lesson/{{lesson.id-1}}" class="hidpre "><button>Previous</button></a>
+        <div class="card-body p-5">
 
-<a href="/lesson/{{lesson.id+1}}" class="hidnext "><button>Next</button></a><br>
+            <!-- Lesson Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
 
-<br><a href=""><button>Take Quiz</button></a>
+                <div>
+                    <h1 class="fw-bold text-primary">
+                        {{ lesson.lesson_name }}
+                    </h1>
 
-{%endblock%}
+                    <p class="text-muted mb-0">
+                        {{ lesson.course.course_name }}
+                    </p>
+                </div>
+
+                <span class="badge bg-primary fs-6">
+                    Lesson {{ lesson.id }}
+                </span>
+
+            </div>
+
+            <hr class="mb-4">
+
+            <!-- Navigation -->
+
+            <div class="d-flex justify-content-between mb-5">
+
+                {% if lesson.id > 1 %}
+                    <a href="/lesson/{{ lesson.id-1 }}"
+                       class="btn btn-outline-primary">
+
+                        ← Previous Lesson
+
+                    </a>
+                {% else %}
+                    <div></div>
+                {% endif %}
+
+                {% if lesson.id < 11 %}
+                    <a href="/lesson/{{ lesson.id+1 }}"
+                       class="btn btn-outline-primary">
+
+                        Next Lesson →
+
+                    </a>
+                {% endif %}
+
+            </div>
+
+            <!-- Video -->
+
+            {% if lesson.video_url %}
+
+            <div class="ratio ratio-16x9 shadow rounded mb-4">
+
+                <iframe
+                    src="{{ lesson.video_url }}"
+                    allowfullscreen>
+                </iframe>
+
+            </div>
+
+            <div class="text-center mb-5">
+
+                <a href="{{ lesson.video_url }}"
+                   target="_blank"
+                   class="btn btn-danger">
+
+                    ▶ Watch on YouTube
+
+                </a>
+
+            </div>
+
+            {% endif %}
+
+            <!-- Lesson Content -->
+            <div class="alert alert-info border-0 shadow-sm mb-5">
+                <strong>Learning Objective</strong><br>By the end of this lesson you should understand the concepts discussed below and be ready to complete the quiz.
+            </div>
+
+            <div class="lesson-content">
+
+                {{ lesson.content|replace('\n','<br>')|safe }}
+
+            </div>
+
+            <hr class="my-5">
+
+            <!-- Bottom Navigation -->
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                {% if lesson.id > 1 %}
+                    <a href="/lesson/{{ lesson.id-1 }}"
+                       class="btn btn-outline-secondary">
+
+                        ← Previous
+
+                    </a>
+                {% else %}
+                    <div></div>
+                {% endif %}
+
+                <a href="/quiz/{{ lesson.id }}"
+                   class="btn btn-success btn-lg px-5">
+
+                    Take Quiz
+
+                </a>
+
+                {% if lesson.id < 10 %}
+                    <a href="/lesson/{{ lesson.id+1 }}"
+                       class="btn btn-outline-secondary">
+
+                        Next →
+
+                    </a>
+                {% else %}
+                    <div></div>
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

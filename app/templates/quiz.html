@@ -1,32 +1,154 @@
-{%extends 'base.html'%}
-{%block title%}
-    Quiz {{quiz.id}}
-{%endblock%}
+{% extends 'base.html' %}
 
-{%block content%}
-<h3>Quiz {{quiz.id}}: {{quiz.quiz_topic}}</h3>
-<a href=""><button>Back to lesson</button></a>
-<form method="post">
-    {%for qn in questions%}
-        <p>{{qn.question_text}}</p>
-        <input type="radio" name="question_{{qn.id}}" value="{{qn.option1}}">{{qn.option1}}<br>
-        <input type="radio" name="question_{{qn.id}}" value="{{qn.option2}}">{{qn.option2}}<br>
-        {%if qn.option3 %}
-            <input type="radio" name="question_{{qn.id}}" value="{{qn.option3}}">{{qn.option3}}<br>
+{% block title %}
+Quiz {{ quiz.id }}
+{% endblock %}
+
+{% block content %}
+
+<div class="container my-5">
+
+    <div class="quiz-shell">
+
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+
+            <div>
+                <div class="small text-uppercase text-primary fw-semibold mb-2">
+                    Forex Academy
+                </div>
+
+                <h1 class="quiz-title mb-2">
+                    {{ quiz.quiz_topic }}
+                </h1>
+
+                <p class="quiz-subtitle mb-0">
+                    Answer all questions, then submit to see your score and continue learning.
+                </p>
+            </div>
+
+            <a href="/lesson/{{ quiz.lesson_id }}" class="btn btn-outline-primary rounded-pill px-4">
+                ← Back to Lesson
+            </a>
+
+        </div>
+
+        <!-- Progress -->
+        <div class="progress mb-5" style="height: 10px;">
+            <div class="progress-bar" style="width: 100%"></div>
+        </div>
+
+        <form method="post">
+
+            {% for qn in questions %}
+
+            <section class="question-block">
+
+                <div class="question-number mb-2">
+                    Question {{ loop.index }} of {{ questions|length }}
+                </div>
+
+                <h4 class="question-text mb-4">
+                    {{ qn.question_text }}
+                </h4>
+
+                <label class="option-row" for="q{{ qn.id }}o1">
+                    <input type="radio"
+                           name="question_{{ qn.id }}"
+                           value="{{ qn.option1 }}"
+                           id="q{{ qn.id }}o1">
+
+                    <span>{{ qn.option1 }}</span>
+                </label>
+
+                <label class="option-row" for="q{{ qn.id }}o2">
+                    <input type="radio"
+                           name="question_{{ qn.id }}"
+                           value="{{ qn.option2 }}"
+                           id="q{{ qn.id }}o2">
+
+                    <span>{{ qn.option2 }}</span>
+                </label>
+
+                {% if qn.option3 %}
+                <label class="option-row" for="q{{ qn.id }}o3">
+                    <input type="radio"
+                           name="question_{{ qn.id }}"
+                           value="{{ qn.option3 }}"
+                           id="q{{ qn.id }}o3">
+
+                    <span>{{ qn.option3 }}</span>
+                </label>
+                {% endif %}
+
+                {% if qn.option4 %}
+                <label class="option-row" for="q{{ qn.id }}o4">
+                    <input type="radio"
+                           name="question_{{ qn.id }}"
+                           value="{{ qn.option4 }}"
+                           id="q{{ qn.id }}o4">
+
+                    <span>{{ qn.option4 }}</span>
+                </label>
+                {% endif %}
+
+            </section>
+
+            {% endfor %}
+
+            <div class="text-center mt-5">
+                <button class="btn btn-primary btn-lg rounded-pill px-5 py-3 shadow-sm">
+                    Submit Quiz
+                </button>
+            </div>
+
+        </form>
+
+        {% if score is not none %}
+
+        <div class="score-panel mt-5 text-center">
+
+            <div class="score-icon mb-3">🎉</div>
+
+            <div class="small text-uppercase text-success fw-semibold mb-2">
+                Quiz Complete
+            </div>
+
+            <div class="score-value mb-2">
+                {{ score }} / {{ questions|length }}
+            </div>
+
+            {% if score == questions|length %}
+                <p class="score-message mb-0">
+                    Outstanding work! You got every question correct.
+                </p>
+
+            {% elif score >= (questions|length * 0.7) %}
+                <p class="score-message mb-0">
+                    Great job. You have a strong understanding of this lesson.
+                </p>
+
+            {% else %}
+                <p class="score-message mb-0">
+                    Good effort. Review the lesson and try the quiz again.
+                </p>
+            {% endif %}
+
+            <div class="mt-4">
+                <a href="/lesson/{{ quiz.lesson_id + 1 }}"
+                   class="btn btn-success btn-lg rounded-pill px-5 py-3">
+
+                    Continue to Next Lesson →
+
+                </a>
+            </div>
+
+        </div>
+
         {% endif %}
-        {% if qn.option4 %}
-            <input type="radio" name="question_{{qn.id}}" value="{{qn.option4}}">{{qn.option4}}<br>
-        {% endif %}
-            
-    {%endfor%}
 
-    <input type="submit" value="Submit">
-</form>
-{% if score is not none %}
-    <p>Your score: {{score}} out of {{questions|length}}</p>
-{% endif %}
+    </div>
 
-<a href=""><button>Next lesson</button></a>
+</div>
 
-
-{%endblock%}
+{% endblock %}
