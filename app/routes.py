@@ -209,9 +209,6 @@ def analytics():
     gross_loss = abs(sum(t.profit_loss for t in losses))
     profit_factor = (sum(t.profit_loss for t in wins) / gross_loss) if gross_loss else 0.0
 
-    # Equity curve always starts with a real "Start" point, then one point
-    # per closed trade. This guarantees at least 2 points so the line chart
-    # always has something to draw, even for a brand-new account.
     starting_balance = round((account.balance if account else 10000.00) - total_pnl, 2)
     running = starting_balance
     equity_curve = [{"date": "Start", "value": starting_balance}]
@@ -248,9 +245,7 @@ def analytics():
         ],
     }
 
-    # Learning: only counts of what exists — no per-user progress yet since
-    # quiz attempts aren't saved anywhere in the current schema. The template
-    # shows this as real numbers plus a "Coming Soon" panel for the rest.
+    
     learning = {
         "total_lessons": Lesson.query.count(),
         "total_quizzes": Quiz.query.count(),
