@@ -202,3 +202,89 @@ def market_data():
     return jsonify({"pairs": results})
 
 
+@trading.route("/trading/deposit", methods=["POST"])
+@login_required
+def deposit():
+    account = TradingAccount.query.filter_by(user_id=current_user.id).first()
+    if not account:
+        account = TradingAccount(user_id=current_user.id, balance=10000.00, equity=10000.00)
+        db.session.add(account)
+        db.session.commit()
+
+    amount_str = request.form.get("amount", "0")
+    try:
+        amount = float(amount_str)
+    except (ValueError, TypeError):
+        amount = 0.0
+
+    if amount <= 0:
+        flash("Please enter a valid deposit amount greater than $0.", "danger")
+        return redirect(request.referrer or url_for("trading.trading_dashboard"))
+
+    if amount > 1000000:
+        flash("Maximum deposit amount per transaction is $1,000,000.00.", "warning")
+        return redirect(request.referrer or url_for("trading.trading_dashboard"))
+
+    account.balance = round(account.balance + amount, 2)
+    account.equity = round(account.equity + amount, 2)
+    db.session.commit()
+
+    flash(f"Successfully deposited ${amount:,.2f} virtual funds into your paper account!", "success")
+    return redirect(request.referrer or url_for("trading.trading_dashboard"))
+
+
+@trading.route("/trading/withdraw", methods=["POST"])
+@login_required
+def withdraw():
+    account = TradingAccount.query.filter_by(user_id=current_user.id).first()
+    if not account:
+        flash("Trading account not found.", "danger")
+        return redirect(request.referrer or url_for("trading.trading_dashboard"))
+
+    amount_str = request.form.get("amount", "0")
+    try:
+        amount = float(amount_str)
+    except (ValueError, TypeError):
+        amount = 0.0
+
+    if amount <= 0:
+        flash("Please enter a valid withdrawal amount greater than $0.", "danger")
+        return redirect(request.referrer or url_for("trading.trading_dashboard"))
+
+    # Calculate free margin to ensure open positions aren't liquidated or overdrawn
+    open_trades = Trade.query.filter_by(user_id=current_user.id, status="OPEN").all()
+    pairs = CurrencyPair.query.all()
+    pair_price_map = {p.symbol: p for p in pairs}
+    
+    total_floating_pnl = 0.0
+    for trade in open_trades:
+        pair_obj = pair_price_map.get(trade.pair)
+        if pair_obj:
+            curr_price = pair_obj.sell_price if trade.trade_type == "BUY" else pair_obj.buy_price
+            price_diff = curr_price - trade.open_price if trade.trade_type == "BUY" else trade.open_price - curr_price
+            multiplier = 100000 if "XAU" not in trade.pair else 100
+            total_floating_pnl += price_diff * trade.lot_size * multiplier
+
+    account_equity = account.balance + total_floating_pnl
+    margin_used = sum([t.lot_size * 1000 for t in open_trades])
+    free_margin = max(0.0, account_equity - margin_used)
+
+    # User cannot withdraw more than their balance or their free margin
+    max_withdrawable = min(account.balance, free_margin)
+
+    if amount > max_withdrawable:
+        flash(
+            f"Insufficient available funds. Maximum withdrawable amount (Free Margin): ${max_withdrawable:,.2f}.",
+            "danger"
+        )
+        return redirect(request.referrer or url_for("trading.trading_dashboard"))
+
+    account.balance = round(account.balance - amount, 2)
+    account.equity = round(account.equity - amount, 2)
+    db.session.commit()
+
+    flash(f"Successfully withdrew ${amount:,.2f} virtual funds from your paper account!", "success")
+    return redirect(request.referrer or url_for("trading.trading_dashboard"))
+
+
+
