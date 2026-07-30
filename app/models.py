@@ -10,7 +10,50 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(255), nullable=False)
 
     def __repr__(self):
-        return f"<User {self.username}>" 
+        return f"<User {self.username}>"
+
+    def track_lesson_progress(self, lesson_id, status="in_progress", quiz_score=None, completed=False):
+        progress = StudentProgress.query.filter_by(user_id=self.id, lesson_id=lesson_id).first()
+        if not progress:
+            progress = StudentProgress(user_id=self.id, lesson_id=lesson_id)
+            db.session.add(progress)
+
+        progress.status = status
+        progress.completed = completed
+        if quiz_score is not None:
+            progress.quiz_score = quiz_score
+
+        if progress.completed and not progress.completed_at:
+            progress.completed_at = datetime.utcnow()
+        elif not progress.completed:
+            progress.completed_at = None
+
+        progress.last_accessed_at = datetime.utcnow()
+        if not progress.started_at:
+            progress.started_at = datetime.utcnow()
+
+        return progress
+
+
+class StudentProgress(db.Model):
+    __tablename__ = "student_progress"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    lesson_id = db.Column(db.Integer, db.ForeignKey("lesson.id"), nullable=False)
+    status = db.Column(db.String(20), default="not_started", nullable=False)
+    quiz_score = db.Column(db.Integer, default=0)
+    completed = db.Column(db.Boolean, default=False, nullable=False)
+    started_at = db.Column(db.DateTime, default=datetime.utcnow)
+    completed_at = db.Column(db.DateTime, nullable=True)
+    last_accessed_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "lesson_id", name="uq_student_progress_user_lesson"),
+    )
+
+    user = db.relationship("User", backref="learning_progress")
+    lesson = db.relationship("Lesson", backref="student_progress")
 
 
 class Course(db.Model):

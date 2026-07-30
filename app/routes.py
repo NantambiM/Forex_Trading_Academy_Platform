@@ -2,10 +2,8 @@ from flask import Blueprint, render_template, redirect, request, url_for, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
 from datetime import datetime, timedelta
-from .models import  Course, Question, Quiz,Lesson
-from .models import User, TradingAccount
+from .models import Course, Question, Quiz, Lesson, StudentProgress, User, TradingAccount, Trade
 from .forms import RegisterForm, LoginForm, UpdateProfileForm, ChangePasswordForm
-from .models import User, TradingAccount, Trade
 from . import db
 
 main = Blueprint("main", __name__)
@@ -161,6 +159,11 @@ def lesson(id):
     if not lesson:
         flash("Lesson not found.", "danger")
         return redirect(url_for("main.dashboard"))
+
+    if current_user.is_authenticated:
+        current_user.track_lesson_progress(lesson.id, status="in_progress")
+        db.session.commit()
+
     return render_template("lesson.html", lesson=lesson)
 
 @main.route("/quiz/<int:id>", methods=["GET", "POST"])
@@ -172,11 +175,23 @@ def quiz(id):
         return redirect(url_for("main.dashboard"))
     score = None
     if request.method == "POST":
-        score=0
+        score = 0
         for question in questions:
             selected_option = request.form.get(f"question_{question.id}")
             if selected_option == question.correct_option:
                 score += 1
+
+        if current_user.is_authenticated:
+            passing_score = max(1, int(len(questions) * 0.7))
+            completed = score >= passing_score
+            status = "completed" if completed else "review"
+            current_user.track_lesson_progress(
+                quiz.lesson_id,
+                status=status,
+                quiz_score=score,
+                completed=completed,
+            )
+            db.session.commit()
 
     return render_template("quiz.html", quiz=quiz,questions=questions,score=score)
 
@@ -250,9 +265,51 @@ def analytics():
     }
 
     
+    total_lessons = Lesson.query.count()
+    total_quizzes = Quiz.query.count()
+    progress_records = StudentProgress.query.filter_by(user_id=current_user.id).all()
+    progress_by_lesson = {record.lesson_id: record for record in progress_records}
+
+    completed_lessons = sum(1 for record in progress_records if record.completed)
+    in_progress_lessons = sum(1 for record in progress_records if record.status == "in_progress")
+    progress_percentage = round((completed_lessons / total_lessons * 100), 1) if total_lessons else 0.0
+
+    completed_scores = [record.quiz_score for record in progress_records if record.completed and record.quiz_score is not None]
+    average_quiz_score = round(sum(completed_scores) / len(completed_scores), 1) if completed_scores else 0.0
+
+    lesson_progress = []
+    for lesson in Lesson.query.order_by(Lesson.id).all():
+        record = progress_by_lesson.get(lesson.id)
+        if record and record.completed:
+            status_label = "Completed"
+            status_class = "done"
+        elif record and record.status == "review":
+            status_label = "Needs Review"
+            status_class = "review"
+        elif record and record.status == "in_progress":
+            status_label = "In Progress"
+            status_class = "in-progress"
+        else:
+            status_label = "Not Started"
+            status_class = "not-started"
+
+        lesson_progress.append({
+            "lesson_id": lesson.id,
+            "lesson_name": lesson.lesson_name,
+            "status_label": status_label,
+            "status_class": status_class,
+            "quiz_score": record.quiz_score if record else None,
+            "last_accessed": record.last_accessed_at.strftime("%b %d, %Y") if record and record.last_accessed_at else "Not opened yet",
+        })
+
     learning = {
-        "total_lessons": Lesson.query.count(),
-        "total_quizzes": Quiz.query.count(),
+        "total_lessons": total_lessons,
+        "total_quizzes": total_quizzes,
+        "completed_lessons": completed_lessons,
+        "in_progress_lessons": in_progress_lessons,
+        "progress_percentage": progress_percentage,
+        "average_quiz_score": average_quiz_score,
+        "lesson_progress": lesson_progress,
     }
 
     return render_template(
