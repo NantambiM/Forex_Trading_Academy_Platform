@@ -4,18 +4,326 @@
 
 {% block content %}
 
-<div class="text-center mt-5">
+{# ======================================================== #}
+{# HERO SECTION – Full screen with trading background        #}
+{# ======================================================== #}
+<section class="hero-section d-flex align-items-center">
+  <div class="hero-overlay"></div>
+  <div class="container position-relative z-index-2">
+    <div class="row justify-content-center">
+      <div class="col-lg-10 col-xl-8">
 
-    <h1>Welcome to Forex Academy</h1>
+        {# --- glassmorphism card container --- #}
+        <div class="hero-card p-4 p-md-5 text-center">
+          <h1 class="hero-title display-3 fw-bold mb-3">
+            Welcome to Forex Academy
+          </h1>
 
-    <p class="lead">
-        Learn Forex Trading, Practice Strategies, and Improve Your Trading Skills.
-    </p>
+          <p class="hero-subtitle lead mb-4 mx-auto" style="max-width: 700px;">
+            Learn Forex Trading, Practice Strategies, Analyze Markets,<br class="d-none d-sm-block">
+            Manage Risk &amp; Become Consistently Profitable.
+          </p>
 
-    <a href="{{ url_for('main.register') }}" class="btn btn-primary btn-lg">
-        Get Started
-    </a>
+          {# --- CTA button (exact Flask route preserved) --- #}
+          <a href="{{ url_for('main.register') }}" class="btn btn-cta btn-lg rounded-pill px-5 py-3 fw-semibold">
+            Get Started
+          </a>
+        </div>
 
-</div>
+        {# ==================================================== #}
+        {# FEATURES SECTION – 3 glassmorphism cards            #}
+        {# ==================================================== #}
+        <div class="row g-4 mt-5 features-row">
+          <div class="col-md-4">
+            <div class="feature-card h-100 text-center p-4">
+              <div class="feature-icon mb-3">📈</div>
+              <h5 class="fw-bold text-white">Market Analysis</h5>
+              <p class="text-light-emphasis mb-0">
+                Learn technical and fundamental analysis.
+              </p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="feature-card h-100 text-center p-4">
+              <div class="feature-icon mb-3">💹</div>
+              <h5 class="fw-bold text-white">Trading Simulator</h5>
+              <p class="text-light-emphasis mb-0">
+                Practice without risking real money.
+              </p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="feature-card h-100 text-center p-4">
+              <div class="feature-icon mb-3">🛡️</div>
+              <h5 class="fw-bold text-white">Risk Management</h5>
+              <p class="text-light-emphasis mb-0">
+                Master capital preservation and disciplined trading.
+              </p>
+            </div>
+          </div>
+        </div>
 
-{% endblock %} 
+        {# ==================================================== #}
+        {# STATISTICS SECTION – animated-looking stats         #}
+        {# ==================================================== #}
+        <div class="row g-4 mt-5 stats-row justify-content-center">
+          <div class="col-4 col-md-3 text-center">
+            <div class="stat-number">50+</div>
+            <div class="stat-label">Trading Lessons</div>
+          </div>
+          <div class="col-4 col-md-3 text-center">
+            <div class="stat-number">100+</div>
+            <div class="stat-label">Practice Quizzes</div>
+          </div>
+          <div class="col-4 col-md-3 text-center">
+            <div class="stat-number">24/7</div>
+            <div class="stat-label">Learning Access</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ======================================================== #}
+{# STYLES – embedded to keep everything self-contained      #}
+{# ======================================================== #}
+<style>
+  /* ---------- reset / base ---------- */
+  .hero-section {
+    position: relative;
+    min-height: 100vh;
+    width: 100%;
+    background: #08111f; /* fallback */
+    overflow: hidden;
+    padding: 3rem 0;
+  }
+
+  /* ---------- full‑screen background image ---------- */
+  .hero-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url('https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1600&q=80') center center / cover no-repeat fixed;
+    z-index: 0;
+    filter: brightness(0.85);
+  }
+
+  /* ---------- gradient overlay (black -> transparent) ---------- */
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(8,17,31,0.82) 0%, rgba(8,17,31,0.55) 100%);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .z-index-2 {
+    z-index: 2;
+    position: relative;
+  }
+
+  /* ---------- glassmorphism hero card ---------- */
+  .hero-card {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border-radius: 2.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(37, 99, 235, 0.15);
+    transition: box-shadow 0.3s ease;
+  }
+
+  .hero-card:hover {
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(37, 99, 235, 0.25);
+  }
+
+  /* ---------- typography ---------- */
+  .hero-title {
+    color: #ffffff;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    letter-spacing: -0.02em;
+  }
+
+  .hero-subtitle {
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: 400;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.3);
+  }
+
+  /* ---------- CTA button (premium) ---------- */
+  .btn-cta {
+    background: linear-gradient(145deg, #2563eb, #1d4ed8);
+    border: none;
+    color: #fff;
+    font-size: 1.25rem;
+    letter-spacing: 0.3px;
+    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.40);
+    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-cta::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 30% 40%, rgba(6, 182, 212, 0.3), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .btn-cta:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 16px 40px rgba(37, 99, 235, 0.55);
+    color: #fff;
+    background: linear-gradient(145deg, #3b82f6, #2563eb);
+  }
+
+  .btn-cta:hover::after {
+    opacity: 1;
+  }
+
+  /* ---------- feature cards (glass) ---------- */
+  .feature-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 1.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    transition: all 0.25s ease;
+    padding: 1.5rem 1rem;
+  }
+
+  .feature-card:hover {
+    transform: translateY(-8px);
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(37, 99, 235, 0.35);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  }
+
+  .feature-icon {
+    font-size: 2.6rem;
+    line-height: 1.2;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+  }
+
+  .feature-card h5 {
+    color: #f0f9ff;
+    letter-spacing: -0.01em;
+  }
+
+  .feature-card p {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.95rem;
+  }
+
+  /* ---------- statistics (animated‑look) ---------- */
+  .stat-number {
+    font-size: 2.6rem;
+    font-weight: 700;
+    color: #10b981;
+    text-shadow: 0 0 20px rgba(16, 185, 129, 0.25);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    transition: all 0.2s ease;
+  }
+
+  .stat-number:hover {
+    text-shadow: 0 0 30px rgba(16, 185, 129, 0.45);
+    transform: scale(1.02);
+  }
+
+  .stat-label {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 1rem;
+    font-weight: 400;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    margin-top: 0.2rem;
+  }
+
+  /* ---------- spacing / responsiveness ---------- */
+  .features-row {
+    margin-top: 2.5rem !important;
+  }
+
+  .stats-row {
+    margin-top: 2.5rem !important;
+  }
+
+  @media (max-width: 767.98px) {
+    .hero-card {
+      padding: 2rem 1.25rem !important;
+      border-radius: 2rem;
+    }
+    .hero-title {
+      font-size: calc(1.8rem + 1.5vw);
+    }
+    .btn-cta {
+      font-size: 1.05rem;
+      padding: 0.7rem 2rem !important;
+    }
+    .feature-icon {
+      font-size: 2.2rem;
+    }
+    .stat-number {
+      font-size: 2.2rem;
+    }
+    .hero-section {
+      min-height: 100vh;
+      padding: 2rem 0;
+    }
+    .features-row .col-md-4 {
+      margin-bottom: 0.5rem;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .hero-title {
+      font-size: 2rem;
+    }
+    .hero-subtitle {
+      font-size: 1rem;
+    }
+    .stat-number {
+      font-size: 1.9rem;
+    }
+    .stat-label {
+      font-size: 0.8rem;
+    }
+    .feature-card {
+      padding: 1.2rem 0.8rem;
+    }
+  }
+
+  /* ---------- subtle floating animation for hero card ---------- */
+  @keyframes floatFade {
+    0% { opacity: 0.6; transform: translateY(14px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero-card {
+    animation: floatFade 1s ease-out forwards;
+  }
+
+  .features-row .feature-card {
+    opacity: 0;
+    animation: floatFade 0.8s ease-out forwards;
+  }
+  .features-row .feature-card:nth-child(1) { animation-delay: 0.1s; }
+  .features-row .feature-card:nth-child(2) { animation-delay: 0.2s; }
+  .features-row .feature-card:nth-child(3) { animation-delay: 0.3s; }
+
+  .stats-row .col-4 {
+    opacity: 0;
+    animation: floatFade 0.8s ease-out forwards;
+  }
+  .stats-row .col-4:nth-child(1) { animation-delay: 0.25s; }
+  .stats-row .col-4:nth-child(2) { animation-delay: 0.35s; }
+  .stats-row .col-4:nth-child(3) { animation-delay: 0.45s; }
+</style>
+
+{% endblock %}
