@@ -6,42 +6,79 @@
 
 <div class="container my-5">
 
-    <h1 class="fw-bold text-primary mb-4">
-        Available Courses
-    </h1>
+    <!-- Header with gradient accent -->
+    <div class="row align-items-center mb-5">
+        <div class="col-md-8">
+            <h1 class="display-4 fw-bold bg-gradient-primary-to-blue d-inline-block">
+                <i class="bi bi-mortarboard me-2"></i>Available Courses
+            </h1>
+            <p class="text-muted fs-5 mt-2">Master Forex trading with our expert-led courses</p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <span class="badge bg-dark text-light px-4 py-2 rounded-pill fs-6">
+                <i class="bi bi-book me-2"></i>{{ courses|length }} Courses
+            </span>
+        </div>
+    </div>
 
+    <!-- Course Grid -->
     <div class="row g-4">
 
         {% for course in courses %}
 
         <div class="col-md-6 col-lg-4">
 
-            <div class="card h-100 border-0 shadow-sm rounded-4">
+            <div class="card course-card h-100 border-0 rounded-4 overflow-hidden shadow-hover">
+
+                <!-- Decorative gradient bar -->
+                <div class="card-accent-bar"></div>
 
                 <div class="card-body d-flex flex-column p-4">
 
-                    <h4 class="fw-bold text-dark mb-3">
-                        {{ course.course_name }}
-                    </h4>
+                    <!-- Course icon and title -->
+                    <div class="d-flex align-items-start mb-3">
+                        <div class="course-icon-wrapper me-3">
+                            <i class="bi bi-graph-up-arrow fs-4"></i>
+                        </div>
+                        <h4 class="card-title fw-bold text-dark mb-0">
+                            {{ course.course_name }}
+                        </h4>
+                    </div>
 
-                    <p class="text-muted flex-grow-1">
+                    <!-- Description -->
+                    <p class="text-muted flex-grow-1 mb-4" style="line-height: 1.7;">
                         {{ course.description }}
                     </p>
 
+                    <!-- Meta info row -->
+                    <div class="course-meta d-flex align-items-center mb-3">
+                        <i class="bi bi-collection text-primary me-1"></i>
+                        <span class="text-muted small me-3">
+                            {% if course.lessons %}
+                                {{ course.lessons|length }} Lessons
+                            {% else %}
+                                0 Lessons
+                            {% endif %}
+                        </span>
+                        <i class="bi bi-star-fill text-warning me-1"></i>
+                        <span class="text-muted small">4.8</span>
+                    </div>
+
+                    <!-- CTA Button -->
                     {% if course.lessons %}
 
                         <a href="/lesson/{{ course.lessons[0].id }}"
-                           class="btn btn-primary rounded-pill mt-3">
+                           class="btn btn-primary rounded-pill btn-lg w-100 py-2 fw-semibold btn-cta-hover">
 
-                            Take Course
+                           <i class="bi bi-play-circle me-2"></i>Take Course
 
                         </a>
 
                     {% else %}
 
-                        <button class="btn btn-secondary rounded-pill mt-3" disabled>
+                        <button class="btn btn-secondary rounded-pill btn-lg w-100 py-2 fw-semibold" disabled>
 
-                            No Lessons Yet
+                            <i class="bi bi-x-circle me-2"></i>No Lessons Yet
 
                         </button>
 
@@ -57,6 +94,246 @@
 
     </div>
 
+    <!-- Empty state fallback (optional, preserve logic) -->
+    {% if not courses %}
+    <div class="text-center py-5">
+        <i class="bi bi-journal-x display-1 text-muted"></i>
+        <h3 class="text-muted mt-3">No courses available</h3>
+        <p class="text-muted">Check back later for new content</p>
+    </div>
+    {% endif %}
+
 </div>
+
+<style>
+    /* ==========================================
+       Courses Page — Premium Dark/Light Hybrid
+       ========================================== */
+
+    /* Gradient text for header */
+    .bg-gradient-primary-to-blue {
+        background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* Course Card */
+    .course-card {
+        background: #ffffff;
+        transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        position: relative;
+        border: 1px solid rgba(0, 0, 0, 0.04);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    }
+
+    .course-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 60px rgba(37, 99, 235, 0.15), 0 8px 24px rgba(0, 0, 0, 0.06);
+        border-color: rgba(37, 99, 235, 0.1);
+    }
+
+    /* Decorative accent bar */
+    .card-accent-bar {
+        height: 4px;
+        background: linear-gradient(90deg, #2563eb, #06b6d4, #10b981);
+        border-radius: 4px 4px 0 0;
+        width: 100%;
+        transition: all 0.3s ease;
+    }
+
+    .course-card:hover .card-accent-bar {
+        height: 6px;
+        background: linear-gradient(90deg, #3b82f6, #22d3ee, #34d399);
+    }
+
+    /* Icon wrapper */
+    .course-icon-wrapper {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.10), rgba(6, 182, 212, 0.08));
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #2563eb;
+        border: 1px solid rgba(37, 99, 235, 0.08);
+        transition: all 0.3s ease;
+    }
+
+    .course-card:hover .course-icon-wrapper {
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(6, 182, 212, 0.14));
+        transform: scale(1.05);
+        border-color: rgba(37, 99, 235, 0.2);
+    }
+
+    /* Card title */
+    .card-title {
+        font-size: 1.2rem;
+        line-height: 1.3;
+        letter-spacing: -0.01em;
+    }
+
+    /* Meta row */
+    .course-meta {
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+        padding-top: 0.75rem;
+    }
+
+    .course-meta i {
+        font-size: 0.85rem;
+    }
+
+    /* CTA Button */
+    .btn-cta-hover {
+        transition: all 0.3s ease;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        border: none;
+        box-shadow: 0 4px 16px rgba(37, 99, 235, 0.25);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-cta-hover::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        border-radius: 40px;
+    }
+
+    .btn-cta-hover:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 32px rgba(37, 99, 235, 0.35);
+    }
+
+    .btn-cta-hover:hover::after {
+        opacity: 1;
+    }
+
+    .btn-cta-hover i,
+    .btn-cta-hover span {
+        position: relative;
+        z-index: 1;
+    }
+
+    .btn-cta-hover i {
+        font-size: 1.1rem;
+    }
+
+    /* Secondary button disabled */
+    .btn-secondary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: #e9ecef;
+        border-color: #dee2e6;
+        color: #6c757d;
+    }
+
+    /* ==========================================
+       Dark Mode Support (if base has dark)
+       ========================================== */
+    @media (prefers-color-scheme: dark) {
+        .course-card {
+            background: #1a1f2e;
+            border-color: rgba(255, 255, 255, 0.04);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .course-card:hover {
+            border-color: rgba(37, 99, 235, 0.2);
+            box-shadow: 0 20px 60px rgba(37, 99, 235, 0.12), 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-title {
+            color: #f0f4fa !important;
+        }
+
+        .text-muted {
+            color: rgba(255, 255, 255, 0.6) !important;
+        }
+
+        .course-meta {
+            border-top-color: rgba(255, 255, 255, 0.06);
+        }
+
+        .course-icon-wrapper {
+            background: rgba(37, 99, 235, 0.15);
+            border-color: rgba(37, 99, 235, 0.12);
+        }
+
+        .course-card:hover .course-icon-wrapper {
+            background: rgba(37, 99, 235, 0.25);
+            border-color: rgba(37, 99, 235, 0.2);
+        }
+
+        .badge.bg-dark {
+            background: #1a1f2e !important;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .btn-secondary:disabled {
+            background: #2a2f3e;
+            border-color: #3a3f4e;
+            color: #8a8f9e;
+        }
+    }
+
+    /* ==========================================
+       Responsive
+       ========================================== */
+    @media (max-width: 768px) {
+        .display-4 {
+            font-size: 2.2rem;
+        }
+        .course-card {
+            border-radius: 16px !important;
+        }
+        .card-body {
+            padding: 1.25rem !important;
+        }
+        .btn-cta-hover {
+            font-size: 0.95rem;
+            padding: 0.5rem 1rem;
+        }
+        .course-icon-wrapper {
+            width: 38px;
+            height: 38px;
+            min-width: 38px;
+        }
+        .card-title {
+            font-size: 1.05rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .display-4 {
+            font-size: 1.8rem;
+        }
+        .course-meta {
+            font-size: 0.8rem;
+        }
+        .course-icon-wrapper {
+            width: 34px;
+            height: 34px;
+            min-width: 34px;
+        }
+        .card-title {
+            font-size: 0.95rem;
+        }
+        .container {
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+    }
+
+    /* Utility: shadow-hover class */
+    .shadow-hover {
+        transition: box-shadow 0.3s ease, transform 0.3s ease;
+    }
+</style>
 
 {% endblock %}

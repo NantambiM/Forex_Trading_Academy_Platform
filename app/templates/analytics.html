@@ -71,30 +71,30 @@
 
   <div class="an-page-head">
     <div>
-      <h1 class="h3 fw-bold mb-0">Performance Analytics</h1>
+      <h1 class="h3 fw-bold mb-0"><i class="bi bi-bar-chart-line me-2 text-primary"></i>Performance Analytics</h1>
       <p>Your trading results and learning progress in one place.</p>
     </div>
     <div class="an-range-toggle">
-      <button class="{{ 'active' if range=='7d' else '' }}" data-range="7d">7D</button>
-      <button class="{{ 'active' if range=='30d' else '' }}" data-range="30d">30D</button>
-      <button class="{{ 'active' if range=='all' else '' }}" data-range="all">All&nbsp;Time</button>
+      <button class="{{ 'active' if range=='7d' else '' }}" data-range="7d"><i class="bi bi-calendar-week me-1"></i>7D</button>
+      <button class="{{ 'active' if range=='30d' else '' }}" data-range="30d"><i class="bi bi-calendar3 me-1"></i>30D</button>
+      <button class="{{ 'active' if range=='all' else '' }}" data-range="all"><i class="bi bi-infinity me-1"></i>All&nbsp;Time</button>
     </div>
   </div>
 
   <!-- ============ TRADING ANALYTICS ============ -->
-  <div class="an-section-label trading"><span class="an-dot"></span>Trading Performance</div>
+  <div class="an-section-label trading"><span class="an-dot"></span><i class="bi bi-graph-up-arrow me-1"></i>Trading Performance</div>
 
   <div class="row g-3">
     <div class="col-6 col-lg-3">
       <div class="an-stat-card">
-        <div class="an-label">Account Equity</div>
+        <div class="an-label"><i class="bi bi-graph-up me-1"></i>Account Equity</div>
         <div class="an-value">${{ "%.2f"|format(trading.equity) }}</div>
         <div class="an-sub">Initial capital: ${{ "%.2f"|format(trading.initial_capital) }}</div>
       </div>
     </div>
     <div class="col-6 col-lg-3">
       <div class="an-stat-card">
-        <div class="an-label">Total P&amp;L</div>
+        <div class="an-label"><i class="bi bi-lightning-charge me-1"></i>Total P&amp;L</div>
         <div class="an-value {{ 'pos' if trading.total_pnl >= 0 else 'neg' }}">
           {{ '+' if trading.total_pnl >= 0 else '' }}${{ "%.2f"|format(trading.total_pnl) }}
         </div>
@@ -103,14 +103,14 @@
     </div>
     <div class="col-6 col-lg-3">
       <div class="an-stat-card">
-        <div class="an-label">Win Rate</div>
+        <div class="an-label"><i class="bi bi-pie-chart me-1"></i>Win Rate</div>
         <div class="an-value">{{ "%.1f"|format(trading.win_rate) }}%</div>
         <div class="an-sub">{{ trading.wins }}W / {{ trading.losses }}L</div>
       </div>
     </div>
     <div class="col-6 col-lg-3">
       <div class="an-stat-card">
-        <div class="an-label">Profit Factor</div>
+        <div class="an-label"><i class="bi bi-speedometer2 me-1"></i>Profit Factor</div>
         <div class="an-value">{{ "%.2f"|format(trading.profit_factor) }}</div>
         <div class="an-sub">Avg win ${{ "%.2f"|format(trading.avg_win) }} · Avg loss ${{ "%.2f"|format(trading.avg_loss) }}</div>
       </div>
@@ -122,7 +122,7 @@
       <div class="an-panel">
         <div class="an-panel-head">
           <div>
-            <h3>Equity Curve</h3>
+            <h3><i class="bi bi-graph-up me-1 text-primary"></i>Equity Curve</h3>
             <div class="an-panel-sub">Simulated account balance over time</div>
           </div>
         </div>
@@ -134,14 +134,14 @@
       <div class="an-panel">
         <div class="an-panel-head">
           <div>
-            <h3>Win / Loss Split</h3>
+            <h3><i class="bi bi-pie-chart me-1 text-primary"></i>Win / Loss Split</h3>
             <div class="an-panel-sub">By closed trade count</div>
           </div>
         </div>
         <canvas id="winLossChart" height="180"></canvas>
         <div class="an-legend-row">
-          <div class="an-legend-item"><span class="an-legend-swatch" style="background:var(--an-green)"></span>Wins ({{ trading.wins }})</div>
-          <div class="an-legend-item"><span class="an-legend-swatch" style="background:var(--an-red)"></span>Losses ({{ trading.losses }})</div>
+          <div class="an-legend-item"><span class="an-legend-swatch" style="background:var(--an-green)"></span><i class="bi bi-arrow-up-short text-success"></i>Wins ({{ trading.wins }})</div>
+          <div class="an-legend-item"><span class="an-legend-swatch" style="background:var(--an-red)"></span><i class="bi bi-arrow-down-short text-danger"></i>Losses ({{ trading.losses }})</div>
         </div>
       </div>
     </div>
@@ -150,7 +150,7 @@
   <div class="an-panel mt-3">
     <div class="an-panel-head">
       <div>
-        <h3>Recent Trades</h3>
+        <h3><i class="bi bi-clock-history me-1 text-primary"></i>Recent Trades</h3>
         <div class="an-panel-sub">Last {{ trading.recent_trades|length }} closed positions</div>
       </div>
     </div>
@@ -158,13 +158,13 @@
       <table class="an-table">
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Pair</th>
-            <th>Type</th>
-            <th>Entry</th>
-            <th>Exit</th>
-            <th>Volume</th>
-            <th>P&amp;L</th>
+            <th><i class="bi bi-calendar3 me-1"></i>Date</th>
+            <th><i class="bi bi-currency-exchange me-1"></i>Pair</th>
+            <th><i class="bi bi-arrow-left-right me-1"></i>Type</th>
+            <th><i class="bi bi-box-arrow-in-right me-1"></i>Entry</th>
+            <th><i class="bi bi-box-arrow-right me-1"></i>Exit</th>
+            <th><i class="bi bi-stack me-1"></i>Volume</th>
+            <th><i class="bi bi-lightning-charge me-1"></i>P&amp;L</th>
           </tr>
         </thead>
         <tbody>
@@ -172,14 +172,18 @@
           <tr>
             <td>{{ t.date }}</td>
             <td>{{ t.pair }}</td>
-            <td><span class="an-tag {{ 'buy' if t.type=='BUY' else 'sell' }}">{{ t.type }}</span></td>
+            <td>
+              <span class="an-tag {{ 'buy' if t.type=='BUY' else 'sell' }}">
+                {% if t.type == 'BUY' %}<i class="bi bi-arrow-up me-1"></i>{% else %}<i class="bi bi-arrow-down me-1"></i>{% endif %}{{ t.type }}
+              </span>
+            </td>
             <td>{{ t.entry }}</td>
             <td>{{ t.exit }}</td>
             <td>{{ t.volume }} lots</td>
             <td class="an-pnl {{ 'pos' if t.pnl >= 0 else 'neg' }}">{{ '+' if t.pnl >= 0 else '' }}${{ "%.2f"|format(t.pnl) }}</td>
           </tr>
           {% else %}
-          <tr><td colspan="7" style="color:var(--an-text-faint); text-align:center; padding:24px;">No trades yet — open a position in the Trading Terminal to see it here.</td></tr>
+          <tr><td colspan="7" style="color:var(--an-text-faint); text-align:center; padding:24px;"><i class="bi bi-inbox me-1"></i>No trades yet — open a position in the Trading Terminal to see it here.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -187,33 +191,33 @@
   </div>
 
   <!-- ============ LEARNING ANALYTICS ============ -->
-  <div class="an-section-label learning"><span class="an-dot"></span>Learning Progress</div>
+  <div class="an-section-label learning"><span class="an-dot"></span><i class="bi bi-book me-1"></i>Learning Progress</div>
 
   <div class="row g-3">
     <div class="col-6 col-md-4">
       <div class="an-stat-card learning">
-        <div class="an-label">Lessons Available</div>
+        <div class="an-label"><i class="bi bi-journal-text me-1"></i>Lessons Available</div>
         <div class="an-value">{{ learning.total_lessons }}</div>
         <div class="an-sub">Published in Trading Academy</div>
       </div>
     </div>
     <div class="col-6 col-md-4">
       <div class="an-stat-card learning">
-        <div class="an-label">Quizzes Available</div>
+        <div class="an-label"><i class="bi bi-question-circle me-1"></i>Quizzes Available</div>
         <div class="an-value">{{ learning.total_quizzes }}</div>
         <div class="an-sub">Linked to lessons above</div>
       </div>
     </div>
     <div class="col-6 col-md-4">
       <div class="an-stat-card learning">
-        <div class="an-label">Completed Lessons</div>
+        <div class="an-label"><i class="bi bi-check2-circle me-1"></i>Completed Lessons</div>
         <div class="an-value">{{ learning.completed_lessons }}</div>
         <div class="an-sub">{{ learning.progress_percentage }}% of your curriculum is complete</div>
       </div>
     </div>
     <div class="col-6 col-md-4">
       <div class="an-stat-card learning">
-        <div class="an-label">Average Quiz Score</div>
+        <div class="an-label"><i class="bi bi-trophy me-1"></i>Average Quiz Score</div>
         <div class="an-value">{{ "%.1f"|format(learning.average_quiz_score) }}%</div>
         <div class="an-sub">Based on completed quizzes</div>
       </div>
@@ -223,14 +227,14 @@
   <div class="an-panel mt-3">
     <div class="an-panel-head">
       <div>
-        <h3>Lesson Progress Tracker</h3>
+        <h3><i class="bi bi-list-check me-1 text-warning"></i>Lesson Progress Tracker</h3>
         <div class="an-panel-sub">See which lessons you have started, completed, or need to revisit.</div>
       </div>
     </div>
 
     <div class="mb-3">
       <div class="d-flex justify-content-between align-items-center mb-2">
-        <span class="small" style="color: var(--an-text-dim);">Overall completion</span>
+        <span class="small" style="color: var(--an-text-dim);"><i class="bi bi-percent me-1"></i>Overall completion</span>
         <strong style="color: #e8ecf4;">{{ learning.progress_percentage }}%</strong>
       </div>
       <div class="progress" style="height: 10px; background: #1a2338;">
@@ -242,10 +246,10 @@
       <table class="an-table">
         <thead>
           <tr>
-            <th>Lesson</th>
-            <th>Status</th>
-            <th>Quiz Score</th>
-            <th>Last Opened</th>
+            <th><i class="bi bi-journal-text me-1"></i>Lesson</th>
+            <th><i class="bi bi-flag me-1"></i>Status</th>
+            <th><i class="bi bi-trophy me-1"></i>Quiz Score</th>
+            <th><i class="bi bi-clock-history me-1"></i>Last Opened</th>
           </tr>
         </thead>
         <tbody>

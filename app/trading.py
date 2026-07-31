@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 import random
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .models import TradingAccount, Trade, CurrencyPair
 from . import db
@@ -17,6 +17,7 @@ DEFAULT_PAIRS = [
     {"symbol": "XAU/USD", "buy_price": 2350.50, "sell_price": 2349.80},
 ]
 
+LEVERAGE = 100  # Default 1:100 leverage for paper trading
 
 def seed_currency_pairs():
     """Ensure default currency pairs exist in DB."""
@@ -31,70 +32,71 @@ def seed_currency_pairs():
         db.session.commit()
 
 
-@trading.route("/trading/dashboard")
-@login_required
-def trading_dashboard():
-    seed_currency_pairs()
-
-    account = TradingAccount.query.filter_by(
-        user_id=current_user.id
-    ).first()
-
-    # Create account if user doesn't have one yet
-    if account is None:
-        account = TradingAccount(
-            user_id=current_user.id,
-            balance=10000.00,
-            equity=10000.00
-        )
-        db.session.add(account)
-        db.session.commit()
-
-    open_trades = Trade.query.filter_by(
-        user_id=current_user.id,
-        status="OPEN"
-    ).all()
-
-    closed_trades = Trade.query.filter_by(
-        user_id=current_user.id,
-        status="CLOSED"
-    ).order_by(Trade.closed_at.desc()).limit(20).all()
-
-    pairs = CurrencyPair.query.all()
-
-    # Calculate live simulated P & L for open trades
+def calculate_trade_pnl_and_margin(open_trades, pairs, account_balance):
+    """Utility helper to accurately calculate Floating P&L, Equity, Used Margin & Free Margin."""
+    pair_map = {p.symbol: p for p in pairs}
     total_floating_pnl = 0.0
-    pair_price_map = {p.symbol: p for p in pairs}
+    margin_used = 0.0
 
     for trade in open_trades:
-        pair_obj = pair_price_map.get(trade.pair)
+        pair_obj = pair_map.get(trade.pair)
         if pair_obj:
             curr_price = pair_obj.sell_price if trade.trade_type == "BUY" else pair_obj.buy_price
             price_diff = curr_price - trade.open_price if trade.trade_type == "BUY" else trade.open_price - curr_price
-            
-            # Standard lot size multiplier (100,000 units per standard lot)
-            multiplier = 100000 if "XAU" not in trade.pair else 100
+
+            # Multiplier: 100,000 for standard forex, 100 for Gold (XAU)
+            multiplier = 100 if "XAU" in trade.pair else 100000
             floating_pnl = round(price_diff * trade.lot_size * multiplier, 2)
+            
             trade.current_pnl = floating_pnl
             trade.current_price = curr_price
             total_floating_pnl += floating_pnl
+
+            # Correct 1:100 Leverage Margin Calculation
+            position_value = (trade.lot_size * multiplier) * curr_price
+            margin_used += position_value / LEVERAGE
         else:
             trade.current_pnl = 0.0
             trade.current_price = trade.open_price
 
     total_floating_pnl = round(total_floating_pnl, 2)
-    account_equity = round(account.balance + total_floating_pnl, 2)
-    account.equity = account_equity
-    db.session.commit()
-
-    margin_used = sum([t.lot_size * 1000 for t in open_trades])
+    margin_used = round(margin_used, 2)
+    account_equity = round(account_balance + total_floating_pnl, 2)
     free_margin = round(account_equity - margin_used, 2)
+
+    return total_floating_pnl, margin_used, account_equity, free_margin
+
+
+@trading.route("/trading/dashboard")
+@login_required
+def trading_dashboard():
+    seed_currency_pairs()
+
+    account = TradingAccount.query.filter_by(user_id=current_user.id).first()
+    if account is None:
+        account = TradingAccount(user_id=current_user.id, balance=10000.00, equity=10000.00)
+        db.session.add(account)
+        db.session.commit()
+
+    open_trades = Trade.query.filter_by(user_id=current_user.id, status="OPEN").all()
+    closed_trades = Trade.query.filter_by(
+        user_id=current_user.id, status="CLOSED"
+    ).order_by(Trade.closed_at.desc()).limit(20).all()
+
+    pairs = CurrencyPair.query.all()
+    
+    total_pnl, margin_used, equity, free_margin = calculate_trade_pnl_and_margin(
+        open_trades, pairs, account.balance
+    )
+
+    account.equity = equity
+    db.session.commit()
 
     return render_template(
         "trading_dashboard.html",
         account=account,
-        equity=account_equity,
-        floating_pnl=total_floating_pnl,
+        equity=equity,
+        floating_pnl=total_pnl,
         margin_used=margin_used,
         free_margin=free_margin,
         open_trades=open_trades,
@@ -103,24 +105,78 @@ def trading_dashboard():
     )
 
 
+@trading.route("/api/market_data")
+@login_required
+def market_data():
+    """Live JSON endpoint for real-time ticker updates and dashboard re-calculations."""
+    pairs = CurrencyPair.query.all()
+    pair_results = []
+
+    for p in pairs:
+        # Generate realistic price tick fluctuations
+        if "JPY" in p.symbol:
+            delta = round(random.uniform(-0.05, 0.05), 2)
+            dec = 2
+        elif "XAU" in p.symbol:
+            delta = round(random.uniform(-0.35, 0.35), 2)
+            dec = 2
+        else:
+            delta = round(random.uniform(-0.0003, 0.0003), 5)
+            dec = 5
+
+        p.buy_price = round(max(0.0001, p.buy_price + delta), dec)
+        p.sell_price = round(max(0.0001, p.sell_price + delta), dec)
+        
+        pair_results.append({
+            "symbol": p.symbol,
+            "buy_price": p.buy_price,
+            "sell_price": p.sell_price,
+            "change_pct": round(random.uniform(-0.5, 0.5), 2)
+        })
+
+    db.session.commit()
+
+    # Recalculate Live Account Stats for the user
+    account = TradingAccount.query.filter_by(user_id=current_user.id).first()
+    open_trades = Trade.query.filter_by(user_id=current_user.id, status="OPEN").all()
+
+    if account:
+        total_pnl, margin_used, equity, free_margin = calculate_trade_pnl_and_margin(
+            open_trades, pairs, account.balance
+        )
+        account.equity = equity
+        db.session.commit()
+    else:
+        total_pnl = margin_used = equity = free_margin = 0.0
+
+    return jsonify({
+        "pairs": pair_results,
+        "account": {
+            "balance": round(account.balance, 2) if account else 0.0,
+            "equity": equity,
+            "floating_pnl": total_pnl,
+            "margin_used": margin_used,
+            "free_margin": free_margin
+        }
+    })
+
+
 @trading.route("/trading/place_order", methods=["POST"])
 @login_required
 def place_order():
     pair_symbol = request.form.get("pair")
     trade_type = request.form.get("trade_type", "BUY").upper()
+    
     try:
         lot_size = float(request.form.get("lot_size", 0.1))
     except (ValueError, TypeError):
         lot_size = 0.1
 
     pair = CurrencyPair.query.filter_by(symbol=pair_symbol).first()
-    if not pair:
-        flash("Invalid currency pair selected.", "danger")
-        return redirect(url_for("trading.trading_dashboard"))
-
     account = TradingAccount.query.filter_by(user_id=current_user.id).first()
-    if not account:
-        flash("Trading account not found.", "danger")
+
+    if not pair or not account:
+        flash("Invalid trade execution request.", "danger")
         return redirect(url_for("trading.trading_dashboard"))
 
     open_price = pair.buy_price if trade_type == "BUY" else pair.sell_price
@@ -132,13 +188,13 @@ def place_order():
         lot_size=lot_size,
         open_price=open_price,
         status="OPEN",
-        opened_at=datetime.utcnow()
+        opened_at=datetime.now(timezone.utc)
     )
 
     db.session.add(new_trade)
     db.session.commit()
 
-    flash(f"Order executed: {trade_type} {lot_size} lot(s) of {pair.symbol} @ {open_price}", "success")
+    flash(f"Order Executed: {trade_type} {lot_size} Lot(s) {pair.symbol} @ {open_price}", "success")
     return redirect(url_for("trading.trading_dashboard"))
 
 
@@ -152,15 +208,15 @@ def close_trade(trade_id):
 
     pair = CurrencyPair.query.filter_by(symbol=trade.pair).first()
     close_price = pair.sell_price if trade.trade_type == "BUY" else pair.buy_price if pair else trade.open_price
-    
+
     price_diff = close_price - trade.open_price if trade.trade_type == "BUY" else trade.open_price - close_price
-    multiplier = 100000 if "XAU" not in trade.pair else 100
+    multiplier = 100 if "XAU" in trade.pair else 100000
     pnl = round(price_diff * trade.lot_size * multiplier, 2)
 
     trade.close_price = close_price
     trade.profit_loss = pnl
     trade.status = "CLOSED"
-    trade.closed_at = datetime.utcnow()
+    trade.closed_at = datetime.now(timezone.utc)
 
     account = TradingAccount.query.filter_by(user_id=current_user.id).first()
     if account:
@@ -170,36 +226,8 @@ def close_trade(trade_id):
     db.session.commit()
 
     flash_type = "success" if pnl >= 0 else "danger"
-    flash(f"Closed {trade.pair} position with P&L: ${pnl:+.2f}", flash_type)
+    flash(f"Closed {trade.pair} position. Final Realized P&L: ${pnl:+.2f}", flash_type)
     return redirect(url_for("trading.trading_dashboard"))
-
-
-@trading.route("/api/market_data")
-@login_required
-def market_data():
-    """Simulated market data feed with minor random fluctuations for chart & ticker updates."""
-    pairs = CurrencyPair.query.all()
-    results = []
-    
-    for p in pairs:
-        # Slight random tick shift (-0.0005 to +0.0005)
-        delta = round(random.uniform(-0.0008, 0.0008), 4)
-        if "JPY" in p.symbol or "XAU" in p.symbol:
-            delta = round(random.uniform(-0.15, 0.15), 2)
-            
-        p.buy_price = round(max(0.0001, p.buy_price + delta), 4)
-        p.sell_price = round(max(0.0001, p.sell_price + delta), 4)
-        db.session.commit()
-
-        change_pct = round(random.uniform(-0.85, 1.25), 2)
-        results.append({
-            "symbol": p.symbol,
-            "buy_price": p.buy_price,
-            "sell_price": p.sell_price,
-            "change_pct": change_pct
-        })
-
-    return jsonify({"pairs": results})
 
 
 @trading.route("/trading/deposit", methods=["POST"])
@@ -209,27 +237,21 @@ def deposit():
     if not account:
         account = TradingAccount(user_id=current_user.id, balance=10000.00, equity=10000.00)
         db.session.add(account)
-        db.session.commit()
 
-    amount_str = request.form.get("amount", "0")
     try:
-        amount = float(amount_str)
+        amount = float(request.form.get("amount", "0"))
     except (ValueError, TypeError):
         amount = 0.0
 
-    if amount <= 0:
-        flash("Please enter a valid deposit amount greater than $0.", "danger")
-        return redirect(request.referrer or url_for("trading.trading_dashboard"))
-
-    if amount > 1000000:
-        flash("Maximum deposit amount per transaction is $1,000,000.00.", "warning")
+    if amount <= 0 or amount > 1000000:
+        flash("Invalid deposit amount.", "danger")
         return redirect(request.referrer or url_for("trading.trading_dashboard"))
 
     account.balance = round(account.balance + amount, 2)
     account.equity = round(account.equity + amount, 2)
     db.session.commit()
 
-    flash(f"Successfully deposited ${amount:,.2f} virtual funds into your paper account!", "success")
+    flash(f"Successfully deposited ${amount:,.2f} virtual funds!", "success")
     return redirect(request.referrer or url_for("trading.trading_dashboard"))
 
 
@@ -238,53 +260,27 @@ def deposit():
 def withdraw():
     account = TradingAccount.query.filter_by(user_id=current_user.id).first()
     if not account:
-        flash("Trading account not found.", "danger")
+        flash("Account not found.", "danger")
         return redirect(request.referrer or url_for("trading.trading_dashboard"))
 
-    amount_str = request.form.get("amount", "0")
     try:
-        amount = float(amount_str)
+        amount = float(request.form.get("amount", "0"))
     except (ValueError, TypeError):
         amount = 0.0
 
-    if amount <= 0:
-        flash("Please enter a valid withdrawal amount greater than $0.", "danger")
-        return redirect(request.referrer or url_for("trading.trading_dashboard"))
-
-    # Calculate free margin to ensure open positions aren't liquidated or overdrawn
     open_trades = Trade.query.filter_by(user_id=current_user.id, status="OPEN").all()
     pairs = CurrencyPair.query.all()
-    pair_price_map = {p.symbol: p for p in pairs}
     
-    total_floating_pnl = 0.0
-    for trade in open_trades:
-        pair_obj = pair_price_map.get(trade.pair)
-        if pair_obj:
-            curr_price = pair_obj.sell_price if trade.trade_type == "BUY" else pair_obj.buy_price
-            price_diff = curr_price - trade.open_price if trade.trade_type == "BUY" else trade.open_price - curr_price
-            multiplier = 100000 if "XAU" not in trade.pair else 100
-            total_floating_pnl += price_diff * trade.lot_size * multiplier
-
-    account_equity = account.balance + total_floating_pnl
-    margin_used = sum([t.lot_size * 1000 for t in open_trades])
-    free_margin = max(0.0, account_equity - margin_used)
-
-    # User cannot withdraw more than their balance or their free margin
+    _, _, account_equity, free_margin = calculate_trade_pnl_and_margin(open_trades, pairs, account.balance)
     max_withdrawable = min(account.balance, free_margin)
 
-    if amount > max_withdrawable:
-        flash(
-            f"Insufficient available funds. Maximum withdrawable amount (Free Margin): ${max_withdrawable:,.2f}.",
-            "danger"
-        )
+    if amount <= 0 or amount > max_withdrawable:
+        flash(f"Insufficient funds. Maximum withdrawable amount: ${max_withdrawable:,.2f}.", "danger")
         return redirect(request.referrer or url_for("trading.trading_dashboard"))
 
     account.balance = round(account.balance - amount, 2)
     account.equity = round(account.equity - amount, 2)
     db.session.commit()
 
-    flash(f"Successfully withdrew ${amount:,.2f} virtual funds from your paper account!", "success")
+    flash(f"Successfully withdrew ${amount:,.2f} virtual funds!", "success")
     return redirect(request.referrer or url_for("trading.trading_dashboard"))
-
-
-

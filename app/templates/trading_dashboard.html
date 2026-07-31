@@ -3,8 +3,8 @@
 {% block title %}Trading Terminal - Forex Academy{% endblock %}
 
 {% block extra_head %}
-<!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<!-- TradingView Lightweight Charts -->
+<script src="https://unpkg.com/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -49,7 +49,7 @@
         <div class="col-6 col-md-4 col-xl-2">
             <div class="kpi-card kpi-blue h-100">
                 <div class="kpi-label"><i class="bi bi-wallet2 me-1"></i> Balance</div>
-                <div class="kpi-value">${{ "%.2f"|format(account.balance) }}</div>
+                <div class="kpi-value" id="kpi-balance" data-stat="balance">${{ "%.2f"|format(account.balance) }}</div>
                 <div class="kpi-sub">Initial Capital</div>
             </div>
         </div>
@@ -57,15 +57,15 @@
         <div class="col-6 col-md-4 col-xl-2">
             <div class="kpi-card kpi-gold h-100">
                 <div class="kpi-label"><i class="bi bi-graph-up me-1"></i> Account Equity</div>
-                <div class="kpi-value" id="kpi-equity">${{ "%.2f"|format(equity) }}</div>
+                <div class="kpi-value" id="kpi-equity" data-stat="equity">${{ "%.2f"|format(equity) }}</div>
                 <div class="kpi-sub">Live Valuation</div>
             </div>
         </div>
 
         <div class="col-6 col-md-4 col-xl-2">
-            <div class="kpi-card {% if floating_pnl >= 0 %}kpi-green{% else %}kpi-red{% endif %} h-100">
+            <div class="kpi-card {% if floating_pnl >= 0 %}kpi-green{% else %}kpi-red{% endif %} h-100" id="kpi-pnl-card">
                 <div class="kpi-label"><i class="bi bi-lightning-charge me-1"></i> Floating P&amp;L</div>
-                <div class="kpi-value {% if floating_pnl >= 0 %}text-success{% else %}text-danger{% endif %}" id="kpi-pnl">
+                <div class="kpi-value {% if floating_pnl >= 0 %}text-success{% else %}text-danger{% endif %}" id="kpi-pnl" data-stat="pnl">
                     {% if floating_pnl >= 0 %}+{% endif %}${{ "%.2f"|format(floating_pnl) }}
                 </div>
                 <div class="kpi-sub">Unrealized Profit</div>
@@ -75,7 +75,7 @@
         <div class="col-6 col-md-4 col-xl-2">
             <div class="kpi-card h-100">
                 <div class="kpi-label"><i class="bi bi-shield-check me-1"></i> Free Margin</div>
-                <div class="kpi-value">${{ "%.2f"|format(free_margin) }}</div>
+                <div class="kpi-value" id="kpi-free-margin" data-stat="free_margin">${{ "%.2f"|format(free_margin) }}</div>
                 <div class="kpi-sub">Available Funds</div>
             </div>
         </div>
@@ -83,7 +83,7 @@
         <div class="col-6 col-md-4 col-xl-2">
             <div class="kpi-card h-100">
                 <div class="kpi-label"><i class="bi bi-pie-chart me-1"></i> Margin Used</div>
-                <div class="kpi-value">${{ "%.2f"|format(margin_used) }}</div>
+                <div class="kpi-value" id="kpi-margin-used" data-stat="margin_used">${{ "%.2f"|format(margin_used) }}</div>
                 <div class="kpi-sub">Collateral Locked</div>
             </div>
         </div>
@@ -105,6 +105,7 @@
             <div class="trading-card h-100">
                 <div class="trading-card-header flex-wrap gap-2">
                     <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-bar-chart text-primary"></i>
                         <span class="fs-5 fw-bold" id="activePairTitle">EUR/USD</span>
                         <span class="badge badge-buy" id="activeAskPrice">ASK: 1.0850</span>
                         <span class="badge badge-sell" id="activeBidPrice">BID: 1.0848</span>
@@ -123,9 +124,7 @@
                 </div>
 
                 <div class="trading-card-body">
-                    <div style="height: 380px; position: relative;">
-                        <canvas id="tradingChart"></canvas>
-                    </div>
+                    <div id="chart-container" style="height: 380px; width: 100%; position: relative;"></div>
                 </div>
             </div>
         </div>
@@ -145,7 +144,7 @@
                         
                         <!-- Currency Pair Selection -->
                         <div class="mb-3">
-                            <label class="form-label-sm">Instrument Pair</label>
+                            <label class="form-label-sm"><i class="bi bi-currency-exchange me-1"></i>Instrument Pair</label>
                             <select class="form-select form-select-dark" name="pair" id="orderPairSelect">
                                 {% for pair in pairs %}
                                 <option value="{{ pair.symbol }}" data-buy="{{ pair.buy_price }}" data-sell="{{ pair.sell_price }}">
@@ -157,7 +156,7 @@
 
                         <!-- Trade Direction Selector Tabs -->
                         <div class="mb-3">
-                            <label class="form-label-sm">Order Type</label>
+                            <label class="form-label-sm"><i class="bi bi-arrow-left-right me-1"></i>Order Type</label>
                             <input type="hidden" name="trade_type" id="tradeTypeInput" value="BUY">
                             <div class="row g-2">
                                 <div class="col-6">
@@ -176,7 +175,7 @@
                         <!-- Lot Size Input with Presets -->
                         <div class="mb-3">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <label class="form-label-sm mb-0">Volume (Lots)</label>
+                                <label class="form-label-sm mb-0"><i class="bi bi-stack me-1"></i>Volume (Lots)</label>
                                 <span class="text-secondary small" id="contractSizeText">1 Lot = 100,000 Units</span>
                             </div>
                             <input type="number" step="0.01" min="0.01" max="100" class="form-control form-control-dark font-monospace text-center fs-5 fw-bold mb-2" name="lot_size" id="lotSizeInput" value="0.10">
@@ -193,11 +192,11 @@
                         <!-- Risk Parameters: Stop Loss & Take Profit -->
                         <div class="row g-2 mb-3">
                             <div class="col-6">
-                                <label class="form-label-sm text-danger">Stop Loss (Optional)</label>
+                                <label class="form-label-sm text-danger"><i class="bi bi-shield-x me-1"></i>Stop Loss (Optional)</label>
                                 <input type="number" step="0.0001" class="form-control form-control-dark font-monospace" placeholder="e.g. 1.0800" name="stop_loss">
                             </div>
                             <div class="col-6">
-                                <label class="form-label-sm text-success">Take Profit (Optional)</label>
+                                <label class="form-label-sm text-success"><i class="bi bi-bullseye me-1"></i>Take Profit (Optional)</label>
                                 <input type="number" step="0.0001" class="form-control form-control-dark font-monospace" placeholder="e.g. 1.0920" name="take_profit">
                             </div>
                         </div>
@@ -346,8 +345,8 @@
                                         </span>
                                     </td>
                                     <td class="text-end">
-                                        <button class="btn btn-sm btn-outline-success me-1 btn-quick-trade" data-pair="{{ pair.symbol }}" data-type="BUY">Buy</button>
-                                        <button class="btn btn-sm btn-outline-danger btn-quick-trade" data-pair="{{ pair.symbol }}" data-type="SELL">Sell</button>
+                                        <button class="btn btn-sm btn-outline-success me-1 btn-quick-trade" data-pair="{{ pair.symbol }}" data-type="BUY"><i class="bi bi-arrow-up me-1"></i>Buy</button>
+                                        <button class="btn btn-sm btn-outline-danger btn-quick-trade" data-pair="{{ pair.symbol }}" data-type="SELL"><i class="bi bi-arrow-down me-1"></i>Sell</button>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -417,100 +416,8 @@
 
 {% block scripts %}
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-    
-    // --- Chart Initialization ---
-    const ctx = document.getElementById('tradingChart').getContext('2d');
-    
-    // Generate realistic initial chart price data
-    function generatePriceData(basePrice, count = 30) {
-        const labels = [];
-        const data = [];
-        let current = basePrice;
-        const now = new Date();
-        
-        for (let i = count; i >= 0; i--) {
-            const time = new Date(now.getTime() - i * 60000);
-            labels.push(time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-            
-            const noise = (Math.random() - 0.49) * 0.0012;
-            current = Math.max(0.0001, current + noise);
-            data.push(parseFloat(current.toFixed(4)));
-        }
-        return { labels, data };
-    }
-
-    let activeSymbol = "EUR/USD";
-    let basePrice = 1.0850;
-    let initialChart = generatePriceData(basePrice, 35);
-
-    // Gradient background for chart
-    const gradient = ctx.createLinearGradient(0, 0, 0, 380);
-    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.35)');
-    gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
-
-    const chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: initialChart.labels,
-            datasets: [{
-                label: activeSymbol + ' Price',
-                data: initialChart.data,
-                borderColor: '#3b82f6',
-                borderWidth: 2,
-                backgroundColor: gradient,
-                fill: true,
-                tension: 0.25,
-                pointRadius: 0,
-                pointHoverRadius: 6,
-                pointHoverBackgroundColor: '#3b82f6',
-                pointHoverBorderColor: '#ffffff',
-                pointHoverBorderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                intersect: false,
-                mode: 'index',
-            },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#0f172a',
-                    titleColor: '#94a3b8',
-                    bodyColor: '#f8fafc',
-                    bodyFont: { weight: 'bold', family: 'monospace' },
-                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                    borderWidth: 1,
-                    padding: 10,
-                    displayColors: false,
-                    callbacks: {
-                        label: function(context) {
-                            return `Price: $${context.parsed.y.toFixed(4)}`;
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    grid: { color: 'rgba(255, 255, 255, 0.04)' },
-                    ticks: { color: '#64748b', maxTicksLimit: 8, font: { size: 11 } }
-                },
-                y: {
-                    grid: { color: 'rgba(255, 255, 255, 0.04)' },
-                    ticks: {
-                        color: '#64748b',
-                        font: { family: 'monospace', size: 11 },
-                        callback: function(val) { return val.toFixed(4); }
-                    }
-                }
-            }
-        }
-    });
-
-    // --- Order Form Logic ---
+document.addEventListener("DOMContentLoaded", function () {
+    const chartContainer = document.getElementById('chart-container');
     const orderPairSelect = document.getElementById('orderPairSelect');
     const btnTypeBuy = document.getElementById('btnTypeBuy');
     const btnTypeSell = document.getElementById('btnTypeSell');
@@ -524,29 +431,173 @@ document.addEventListener("DOMContentLoaded", function() {
     const activeAskPrice = document.getElementById('activeAskPrice');
     const activeBidPrice = document.getElementById('activeBidPrice');
 
+    const TF_SECONDS = { '1M': 60, '5M': 300, '15M': 900, '1H': 3600, '1D': 86400 };
+    let activeTimeframe = '1M';
+    let candleInterval = TF_SECONDS[activeTimeframe];
+    let currentCandle = null;
+
+    function getSelectedBuyPrice() {
+        const opt = orderPairSelect.options[orderPairSelect.selectedIndex];
+        return parseFloat(opt?.getAttribute('data-buy') || '1.0850');
+    }
+
+    function priceNoise(basePrice, symbol) {
+        if (symbol && symbol.includes('JPY')) return (Math.random() - 0.5) * 0.08;
+        if (symbol && symbol.includes('XAU')) return (Math.random() - 0.5) * 0.6;
+        return (Math.random() - 0.5) * 0.0012;
+    }
+
+    function generateCandles(basePrice, count, intervalSec, symbol) {
+        const candles = [];
+        let price = basePrice;
+        const now = Math.floor(Date.now() / 1000);
+        const start = now - count * intervalSec;
+
+        for (let i = 0; i < count; i++) {
+            const open = price;
+            const drift = priceNoise(basePrice, symbol);
+            const close = Math.max(0.0001, open + drift);
+            const high = Math.max(open, close) + Math.abs(priceNoise(basePrice, symbol)) * 0.5;
+            const low = Math.min(open, close) - Math.abs(priceNoise(basePrice, symbol)) * 0.5;
+            candles.push({
+                time: start + i * intervalSec,
+                open: +open.toFixed(5),
+                high: +high.toFixed(5),
+                low: +Math.max(0.0001, low).toFixed(5),
+                close: +close.toFixed(5)
+            });
+            price = close;
+        }
+        return candles;
+    }
+
+    function setStat(name, value) {
+        const el = document.querySelector(`[data-stat="${name}"]`);
+        if (el) el.textContent = value;
+    }
+
+    function updateAccountStats(account) {
+        if (!account) return;
+        setStat('balance', '$' + account.balance.toFixed(2));
+        setStat('equity', '$' + account.equity.toFixed(2));
+        const pnl = account.floating_pnl;
+        const pnlEl = document.querySelector('[data-stat="pnl"]');
+        if (pnlEl) {
+            pnlEl.textContent = (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2);
+            pnlEl.classList.toggle('text-success', pnl >= 0);
+            pnlEl.classList.toggle('text-danger', pnl < 0);
+        }
+        setStat('free_margin', '$' + account.free_margin.toFixed(2));
+        setStat('margin_used', '$' + account.margin_used.toFixed(2));
+    }
+
+    if (!chartContainer || typeof LightweightCharts === 'undefined') {
+        console.error('Trading chart library failed to load.');
+        if (chartContainer) {
+            chartContainer.innerHTML = '<div class="text-secondary d-flex align-items-center justify-content-center h-100">Chart library failed to load. Check your network connection.</div>';
+        }
+        return;
+    }
+
+    const chart = LightweightCharts.createChart(chartContainer, {
+        layout: {
+            backgroundColor: '#0f172a',
+            textColor: '#94a3b8'
+        },
+        grid: {
+            vertLines: { color: '#1e293b' },
+            horzLines: { color: '#1e293b' }
+        },
+        width: chartContainer.clientWidth,
+        height: 380,
+        timeScale: {
+            timeVisible: true,
+            secondsVisible: activeTimeframe === '1M',
+            borderColor: '#1e293b'
+        },
+        rightPriceScale: {
+            borderColor: '#1e293b'
+        },
+        crosshair: {
+            mode: LightweightCharts.CrosshairMode.Normal
+        }
+    });
+
+    const candleSeries = chart.addCandlestickSeries({
+        upColor: '#10b981',
+        downColor: '#ef4444',
+        borderVisible: false,
+        wickUpColor: '#10b981',
+        wickDownColor: '#ef4444'
+    });
+
+    function loadChartForPair() {
+        const symbol = orderPairSelect.value;
+        const base = getSelectedBuyPrice();
+        const candles = generateCandles(base, 60, candleInterval, symbol);
+        candleSeries.setData(candles);
+        currentCandle = candles[candles.length - 1] ? { ...candles[candles.length - 1] } : null;
+        chart.timeScale().fitContent();
+    }
+
+    function pushLiveTick(price) {
+        const now = Math.floor(Date.now() / 1000);
+        const bucket = Math.floor(now / candleInterval) * candleInterval;
+
+        if (!currentCandle || currentCandle.time !== bucket) {
+            currentCandle = {
+                time: bucket,
+                open: price,
+                high: price,
+                low: price,
+                close: price
+            };
+        } else {
+            currentCandle.high = Math.max(currentCandle.high, price);
+            currentCandle.low = Math.min(currentCandle.low, price);
+            currentCandle.close = price;
+        }
+        candleSeries.update(currentCandle);
+    }
+
+    loadChartForPair();
+
+    window.addEventListener('resize', () => {
+        chart.applyOptions({ width: chartContainer.clientWidth });
+    });
+
+    document.querySelectorAll('.btn-tf').forEach(btn => {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('.btn-tf').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            activeTimeframe = this.getAttribute('data-tf') || '1M';
+            candleInterval = TF_SECONDS[activeTimeframe] || 60;
+            chart.applyOptions({
+                timeScale: { secondsVisible: activeTimeframe === '1M' }
+            });
+            loadChartForPair();
+        });
+    });
+
     function updateOrderSummary() {
         const selectedOption = orderPairSelect.options[orderPairSelect.selectedIndex];
         const buyPrice = parseFloat(selectedOption.getAttribute('data-buy') || 1.0850);
         const sellPrice = parseFloat(selectedOption.getAttribute('data-sell') || 1.0848);
         const isBuy = tradeTypeInput.value === 'BUY';
-        
         const entryPrice = isBuy ? buyPrice : sellPrice;
         const lots = parseFloat(lotSizeInput.value) || 0.1;
-        
         const requiredMargin = lots * 1000;
         const pipValue = (lots * 10).toFixed(2);
-        
+
         summaryEntryPrice.textContent = entryPrice.toFixed(4);
         summaryRequiredMargin.textContent = `$${requiredMargin.toFixed(2)}`;
         summaryPipValue.textContent = `$${pipValue} / pip`;
-
         activePairTitle.textContent = orderPairSelect.value;
         activeAskPrice.textContent = `ASK: ${buyPrice.toFixed(4)}`;
         activeBidPrice.textContent = `BID: ${sellPrice.toFixed(4)}`;
     }
 
-    // Toggle Buy/Sell Selection
-    btnTypeBuy.addEventListener('click', function() {
+    btnTypeBuy.addEventListener('click', function () {
         tradeTypeInput.value = 'BUY';
         btnTypeBuy.className = 'btn btn-trade-buy w-100 py-2 active';
         btnTypeSell.className = 'btn btn-outline-danger w-100 py-2';
@@ -555,7 +606,7 @@ document.addEventListener("DOMContentLoaded", function() {
         updateOrderSummary();
     });
 
-    btnTypeSell.addEventListener('click', function() {
+    btnTypeSell.addEventListener('click', function () {
         tradeTypeInput.value = 'SELL';
         btnTypeSell.className = 'btn btn-trade-sell w-100 py-2 active';
         btnTypeBuy.className = 'btn btn-outline-success w-100 py-2';
@@ -564,58 +615,42 @@ document.addEventListener("DOMContentLoaded", function() {
         updateOrderSummary();
     });
 
-    orderPairSelect.addEventListener('change', function() {
-        const newPair = orderPairSelect.value;
-        const selectedOption = orderPairSelect.options[orderPairSelect.selectedIndex];
-        const newBasePrice = parseFloat(selectedOption.getAttribute('data-buy') || 1.0850);
-        
-        // Update Chart
-        const newChartData = generatePriceData(newBasePrice, 35);
-        chart.data.labels = newChartData.labels;
-        chart.data.datasets[0].data = newChartData.data;
-        chart.data.datasets[0].label = newPair + ' Price';
-        chart.update();
-
+    orderPairSelect.addEventListener('change', function () {
+        loadChartForPair();
         updateOrderSummary();
     });
 
     lotSizeInput.addEventListener('input', updateOrderSummary);
 
-    // Preset Lot Buttons
     document.querySelectorAll('.btn-preset-lot').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             lotSizeInput.value = parseFloat(this.getAttribute('data-lot')).toFixed(2);
             updateOrderSummary();
         });
     });
 
-    // Quick Trade Buttons in Watchlist
     document.querySelectorAll('.btn-quick-trade').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             const pair = this.getAttribute('data-pair');
             const type = this.getAttribute('data-type');
-            
             orderPairSelect.value = pair;
-            if (type === 'BUY') {
-                btnTypeBuy.click();
-            } else {
-                btnTypeSell.click();
-            }
+            orderPairSelect.dispatchEvent(new Event('change'));
+            if (type === 'BUY') btnTypeBuy.click();
+            else btnTypeSell.click();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         });
     });
 
-    // --- Live Market Price Feed Polling ---
     function pollMarketData() {
         fetch('/api/market_data')
             .then(res => res.json())
             .then(data => {
+                if (data.account) updateAccountStats(data.account);
                 if (!data.pairs) return;
-                
+
                 data.pairs.forEach(p => {
                     const cleanSymbol = p.symbol.replace('/', '');
-                    
-                    // Update Ticker
+
                     const bidElem = document.getElementById(`bid-${cleanSymbol}`);
                     const changeElem = document.getElementById(`change-${cleanSymbol}`);
                     if (bidElem) bidElem.textContent = p.sell_price.toFixed(4);
@@ -625,32 +660,19 @@ document.addEventListener("DOMContentLoaded", function() {
                         changeElem.innerHTML = `<i class="bi ${isPos ? 'bi-arrow-up-short' : 'bi-arrow-down-short'}"></i> ${isPos ? '+' : ''}${p.change_pct}%`;
                     }
 
-                    // Update Watchlist
                     const wlBid = document.getElementById(`wl-bid-${cleanSymbol}`);
                     const wlAsk = document.getElementById(`wl-ask-${cleanSymbol}`);
                     if (wlBid) wlBid.textContent = p.sell_price.toFixed(4);
                     if (wlAsk) wlAsk.textContent = p.buy_price.toFixed(4);
 
-                    // Update dropdown attribute
                     const opt = orderPairSelect.querySelector(`option[value="${p.symbol}"]`);
                     if (opt) {
                         opt.setAttribute('data-buy', p.buy_price);
                         opt.setAttribute('data-sell', p.sell_price);
                     }
 
-                    // Push tick to chart if active
                     if (p.symbol === orderPairSelect.value) {
-                        const now = new Date();
-                        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                        
-                        chart.data.labels.push(timeStr);
-                        chart.data.datasets[0].data.push(p.buy_price);
-                        
-                        if (chart.data.labels.length > 40) {
-                            chart.data.labels.shift();
-                            chart.data.datasets[0].data.shift();
-                        }
-                        chart.update('none'); // silent update
+                        pushLiveTick(p.buy_price);
                     }
                 });
 
@@ -659,27 +681,20 @@ document.addEventListener("DOMContentLoaded", function() {
             .catch(err => console.log('Market polling error:', err));
     }
 
-    // Poll market ticks every 4 seconds
-    setInterval(pollMarketData, 4000);
-
-    // Initial summary calculation
+    setInterval(pollMarketData, 3000);
     updateOrderSummary();
 
-    // Preset Deposit Buttons
     document.querySelectorAll('.btn-deposit-preset').forEach(btn => {
         btn.addEventListener('click', () => {
-            const amount = btn.getAttribute('data-amount');
             const input = document.getElementById('depositAmount');
-            if (input) input.value = amount;
+            if (input) input.value = btn.getAttribute('data-amount');
         });
     });
 
-    // Preset Withdraw Buttons
     document.querySelectorAll('.btn-withdraw-preset').forEach(btn => {
         btn.addEventListener('click', () => {
-            const amount = btn.getAttribute('data-amount');
             const input = document.getElementById('withdrawAmount');
-            if (input) input.value = amount;
+            if (input) input.value = btn.getAttribute('data-amount');
         });
     });
 });
@@ -717,7 +732,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     </div>
                 </div>
                 <div class="modal-footer border-top border-secondary border-opacity-25">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Cancel</button>
                     <button type="submit" class="btn btn-success btn-sm px-4 fw-bold">
                         <i class="bi bi-wallet2 me-1"></i> Confirm Deposit
                     </button>
@@ -762,7 +777,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     </div>
                 </div>
                 <div class="modal-footer border-top border-secondary border-opacity-25">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Cancel</button>
                     <button type="submit" class="btn btn-warning btn-sm px-4 fw-bold text-dark">
                         <i class="bi bi-box-arrow-up-right me-1"></i> Confirm Withdrawal
                     </button>

@@ -1,5 +1,5 @@
 from app import create_app, db
-from app.models import Lesson, Quiz, Question
+from app.models import Course, Lesson, Quiz, Question
 
 app = create_app()
 
@@ -8,6 +8,32 @@ with app.app_context():
     Question.query.delete()
     Quiz.query.delete()
     Lesson.query.delete()
+    Course.query.delete()
+    db.session.commit()
+
+    # Create course entries
+    course1 = Course(
+        course_name='Forex Fundamentals',
+        description='Understand currency markets, trades, and the basic mechanics of forex trading.'
+    )
+    course2 = Course(
+        course_name='Technical Trading',
+        description='Learn charting, indicators, and trading strategies for active forex traders.'
+    )
+    course3 = Course(
+        course_name='Risk Management',
+        description='Master capital preservation, leverage, and position sizing for safer trading.'
+    )
+    course4 = Course(
+        course_name='Advanced Forex Concepts',
+        description='Explore deeper market structure topics and professional trading rules.'
+    )
+    course5 = Course(
+        course_name='Trading Psychology',
+        description='Build the mindset and discipline needed to trade successfully over time.'
+    )
+
+    db.session.add_all([course1, course2, course3, course4, course5])
     db.session.commit()
 
     # Create lessons

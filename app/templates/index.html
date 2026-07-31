@@ -26,7 +26,7 @@
 
           {# --- CTA button (exact Flask route preserved) --- #}
           <a href="{{ url_for('main.register') }}" class="btn btn-cta btn-lg rounded-pill px-5 py-3 fw-semibold">
-            Get Started
+            <i class="bi bi-rocket-takeoff me-2"></i>Get Started
           </a>
         </div>
 
@@ -36,7 +36,7 @@
         <div class="row g-4 mt-5 features-row">
           <div class="col-md-4">
             <div class="feature-card h-100 text-center p-4">
-              <div class="feature-icon mb-3">📈</div>
+              <div class="feature-icon mb-3"><i class="bi bi-graph-up-arrow"></i></div>
               <h5 class="fw-bold text-white">Market Analysis</h5>
               <p class="text-light-emphasis mb-0">
                 Learn technical and fundamental analysis.
@@ -45,7 +45,7 @@
           </div>
           <div class="col-md-4">
             <div class="feature-card h-100 text-center p-4">
-              <div class="feature-icon mb-3">💹</div>
+              <div class="feature-icon mb-3"><i class="bi bi-display"></i></div>
               <h5 class="fw-bold text-white">Trading Simulator</h5>
               <p class="text-light-emphasis mb-0">
                 Practice without risking real money.
@@ -54,7 +54,7 @@
           </div>
           <div class="col-md-4">
             <div class="feature-card h-100 text-center p-4">
-              <div class="feature-icon mb-3">🛡️</div>
+              <div class="feature-icon mb-3"><i class="bi bi-shield-check"></i></div>
               <h5 class="fw-bold text-white">Risk Management</h5>
               <p class="text-light-emphasis mb-0">
                 Master capital preservation and disciplined trading.
@@ -69,15 +69,15 @@
         <div class="row g-4 mt-5 stats-row justify-content-center">
           <div class="col-4 col-md-3 text-center">
             <div class="stat-number">50+</div>
-            <div class="stat-label">Trading Lessons</div>
+            <div class="stat-label"><i class="bi bi-journal-text me-1"></i>Trading Lessons</div>
           </div>
           <div class="col-4 col-md-3 text-center">
             <div class="stat-number">100+</div>
-            <div class="stat-label">Practice Quizzes</div>
+            <div class="stat-label"><i class="bi bi-question-circle me-1"></i>Practice Quizzes</div>
           </div>
           <div class="col-4 col-md-3 text-center">
             <div class="stat-number">24/7</div>
-            <div class="stat-label">Learning Access</div>
+            <div class="stat-label"><i class="bi bi-clock me-1"></i>Learning Access</div>
           </div>
         </div>
 
@@ -207,6 +207,7 @@
   .feature-icon {
     font-size: 2.6rem;
     line-height: 1.2;
+    color: #60a5fa;
     filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
   }
 

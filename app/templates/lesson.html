@@ -17,16 +17,16 @@
 
                 <div>
                     <h1 class="fw-bold text-primary">
-                        {{ lesson.lesson_name }}
+                        <i class="bi bi-mortarboard me-2"></i>{{ lesson.lesson_name }}
                     </h1>
 
                     <p class="text-muted mb-0">
-                        {{ lesson.course.course_name }}
+                        <i class="bi bi-book me-1"></i>{{ lesson.course.course_name }}
                     </p>
                 </div>
 
                 <span class="badge bg-primary fs-6">
-                    Lesson {{ lesson.id }}
+                    <i class="bi bi-bookmark me-1"></i>Lesson {{ lesson.id }}
                 </span>
 
             </div>
@@ -41,7 +41,7 @@
                     <a href="/lesson/{{ lesson.id-1 }}"
                        class="btn btn-outline-primary">
 
-                        ← Previous Lesson
+                        <i class="bi bi-arrow-left me-1"></i>Previous Lesson
 
                     </a>
                 {% else %}
@@ -52,7 +52,7 @@
                     <a href="/lesson/{{ lesson.id+1 }}"
                        class="btn btn-outline-primary">
 
-                        Next Lesson →
+                        Next Lesson<i class="bi bi-arrow-right ms-1"></i>
 
                     </a>
                 {% endif %}
@@ -78,7 +78,7 @@
                    target="_blank"
                    class="btn btn-danger">
 
-                    ▶ Watch on YouTube
+                    <i class="bi bi-youtube me-1"></i>Watch on YouTube
 
                 </a>
 
@@ -88,7 +88,7 @@
 
             <!-- Lesson Content -->
             <div class="alert alert-info border-0 shadow-sm mb-5">
-                <strong>Learning Objective</strong><br>By the end of this lesson you should understand the concepts discussed below and be ready to complete the quiz.
+                <strong><i class="bi bi-lightbulb me-1"></i>Learning Objective</strong><br>By the end of this lesson you should understand the concepts discussed below and be ready to complete the quiz.
             </div>
 
             <div class="lesson-content">
@@ -107,7 +107,7 @@
                     <a href="/lesson/{{ lesson.id-1 }}"
                        class="btn btn-outline-secondary">
 
-                        ← Previous
+                        <i class="bi bi-arrow-left me-1"></i>Previous
 
                     </a>
                 {% else %}
@@ -117,7 +117,7 @@
                 <a href="/quiz/{{ lesson.id }}"
                    class="btn btn-success btn-lg px-5">
 
-                    Take Quiz
+                    <i class="bi bi-clipboard-check me-1"></i>Take Quiz
 
                 </a>
 
@@ -125,7 +125,7 @@
                     <a href="/lesson/{{ lesson.id+1 }}"
                        class="btn btn-outline-secondary">
 
-                        Next →
+                        Next<i class="bi bi-arrow-right ms-1"></i>
 
                     </a>
                 {% else %}

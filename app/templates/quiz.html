@@ -15,11 +15,11 @@ Quiz {{ quiz.id }}
 
             <div>
                 <div class="small text-uppercase text-primary fw-semibold mb-2">
-                    Forex Academy
+                    <i class="bi bi-mortarboard me-1"></i>Forex Academy
                 </div>
 
                 <h1 class="quiz-title mb-2">
-                    {{ quiz.quiz_topic }}
+                    <i class="bi bi-question-circle me-2"></i>{{ quiz.quiz_topic }}
                 </h1>
 
                 <p class="quiz-subtitle mb-0">
@@ -28,7 +28,7 @@ Quiz {{ quiz.id }}
             </div>
 
             <a href="/lesson/{{ quiz.lesson_id }}" class="btn btn-outline-primary rounded-pill px-4">
-                ← Back to Lesson
+                <i class="bi bi-arrow-left me-1"></i>Back to Lesson
             </a>
 
         </div>
@@ -45,7 +45,7 @@ Quiz {{ quiz.id }}
             <section class="question-block">
 
                 <div class="question-number mb-2">
-                    Question {{ loop.index }} of {{ questions|length }}
+                    <i class="bi bi-chat-square-text me-1"></i>Question {{ loop.index }} of {{ questions|length }}
                 </div>
 
                 <h4 class="question-text mb-4">
@@ -98,7 +98,7 @@ Quiz {{ quiz.id }}
 
             <div class="text-center mt-5">
                 <button class="btn btn-primary btn-lg rounded-pill px-5 py-3 shadow-sm">
-                    Submit Quiz
+                    <i class="bi bi-send me-1"></i>Submit Quiz
                 </button>
             </div>
 
@@ -108,10 +108,10 @@ Quiz {{ quiz.id }}
 
         <div class="score-panel mt-5 text-center">
 
-            <div class="score-icon mb-3">🎉</div>
+            <div class="score-icon mb-3"><i class="bi bi-trophy-fill text-warning"></i></div>
 
             <div class="small text-uppercase text-success fw-semibold mb-2">
-                Quiz Complete
+                <i class="bi bi-check2-circle me-1"></i>Quiz Complete
             </div>
 
             <div class="score-value mb-2">
@@ -138,7 +138,7 @@ Quiz {{ quiz.id }}
                 <a href="/lesson/{{ quiz.lesson_id + 1 }}"
                    class="btn btn-success btn-lg rounded-pill px-5 py-3">
 
-                    Continue to Next Lesson →
+                    Continue to Next Lesson<i class="bi bi-arrow-right ms-1"></i>
 
                 </a>
             </div>
